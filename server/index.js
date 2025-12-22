@@ -78,6 +78,7 @@ import { handleParallelAnalyzeStream } from './analyzeParallelStream.js';
 import { handleUnifiedAnalyzeStream } from './analyzeUnifiedStream.js';
 import { calculateLifeTimeline, calculate36MonthTimeline, generate36MonthFallbackKLine, calculate7MonthTimeline, generate7MonthFallbackKLine, calculate61DayTimeline, generate61DayFallbackKLine } from './baziCalculator.js';
 import { getCacheStats, computeBaziHash, getCachedAnalysis } from './cacheManager.js';
+import { getPublicSiteConfig } from './siteConfig.js';
 import { POINTS_CONFIG, getFeatureCost, checkUserPoints, deductUserPoints } from './pointsManager.js';
 import { AGENT_DAILY_FORTUNE_PROMPT } from './agentPrompts.js';
 import { generateCelebrityAnalysis } from './celebrityAnalyzer.js';
@@ -140,6 +141,11 @@ const getAuthedUser = (req) => {
 };
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+// 站点配置 API - 返回前端可用的站点配置
+app.get('/api/site-config', (_req, res) => {
+  res.json(getPublicSiteConfig());
+});
 
 app.post('/api/auth/register', async (req, res) => {
   const email = sanitizeEmail(req.body?.email);

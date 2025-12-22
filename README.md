@@ -184,6 +184,11 @@ API_BASE_URL=https://api.openai.com/v1  # API 服务地址
 API_KEY=sk-xxx                           # 你的 API Key
 DEFAULT_MODEL=gpt-4                      # 默认模型
 
+# 站点配置（自定义你的品牌）
+SITE_NAME=我的命理网                      # 站点名称
+SITE_DOMAIN=mydomain.com                 # 你的域名
+SITE_URL=https://mydomain.com            # 完整URL
+
 # 服务器配置
 PORT=3000                                # 后端端口
 JWT_SECRET=random-32-char-string         # JWT 密钥
