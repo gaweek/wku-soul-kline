@@ -47,7 +47,7 @@ const CaseCard: React.FC<{ caseItem: Case }> = ({ caseItem }) => {
   return (
     <Link
       to={`/cases/${caseItem.id}`}
-      className="group block bg-white rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-xl transition-all duration-300 overflow-hidden"
+      className="group block bg-white rounded-xl border-2 border-gray-200 hover:border-purple-400 hover:shadow-xl hover:glow-purple transition-all duration-300 overflow-hidden"
     >
       {/* Mini Chart Preview (Placeholder) */}
       <div className="h-32 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center relative overflow-hidden">
@@ -129,7 +129,7 @@ const CelebrityCaseCard: React.FC<{
   return (
     <Link
       to={`/celebrity-cases/${celebrity.id}`}
-      className="group block bg-white rounded-xl border border-gray-200 hover:border-amber-300 hover:shadow-xl transition-all duration-300 overflow-hidden"
+      className="group block bg-white rounded-xl border-2 border-gray-200 hover:border-amber-400 hover:shadow-xl hover:glow-golden transition-all duration-300 overflow-hidden"
     >
       {/* Mini Chart Preview */}
       <div className="h-32 bg-gradient-to-br from-amber-50 to-orange-50 flex items-center justify-center relative overflow-hidden">
@@ -277,20 +277,22 @@ const CasesLibrary: React.FC = () => {
 
       <div className="min-h-screen bg-gray-50">
         {/* Hero Section */}
-        <div className="bg-gradient-to-br from-purple-600 via-indigo-600 to-purple-700 text-white">
+        <div className="starfield-bg text-white">
           <div className="max-w-7xl mx-auto px-4 py-16 md:py-24">
             <div className="flex flex-col items-center text-center">
               <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl mb-6">
                 <Users className="w-12 h-12" />
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold font-serif-sc mb-4">
-                案例库
+              <h1 className="text-4xl md:text-5xl font-bold font-serif-sc mb-4 gradient-text-golden">
+                命运案例库
               </h1>
               <p className="text-lg md:text-xl text-purple-100 max-w-2xl mb-8">
                 探索名人命盘与人生曲线案例，
                 从真实命运轨迹中洞察八字玄机。
               </p>
-              <SearchBar placeholder="搜索案例..." />
+              <div className="w-full max-w-2xl glass-card rounded-2xl p-1">
+                <SearchBar placeholder="搜索案例..." />
+              </div>
             </div>
           </div>
         </div>
@@ -340,11 +342,11 @@ const CasesLibrary: React.FC = () => {
                   onClick={() => setSelectedCategory('')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                     selectedCategory === ''
-                      ? 'bg-amber-500 text-white shadow-md'
-                      : 'bg-white text-gray-700 border border-gray-200 hover:border-amber-300 hover:text-amber-600'
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg glow-golden'
+                      : 'bg-white/60 backdrop-blur-sm text-gray-700 border border-amber-200/50 hover:border-amber-300 hover:text-amber-600 hover:glow-golden'
                   }`}
                 >
-                  <Star className="w-4 h-4" />
+                  <Star className={`w-4 h-4 ${selectedCategory === '' ? 'text-white' : 'text-amber-500'}`} />
                   全部分类
                 </button>
                 {categories.map((cat) => {
@@ -355,11 +357,11 @@ const CasesLibrary: React.FC = () => {
                       onClick={() => setSelectedCategory(cat.key)}
                       className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                         selectedCategory === cat.key
-                          ? 'bg-amber-500 text-white shadow-md'
-                          : 'bg-white text-gray-700 border border-gray-200 hover:border-amber-300 hover:text-amber-600'
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg glow-golden'
+                          : 'bg-white/60 backdrop-blur-sm text-gray-700 border border-amber-200/50 hover:border-amber-300 hover:text-amber-600 hover:glow-golden'
                       }`}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon className={`w-4 h-4 ${selectedCategory === cat.key ? 'text-white' : 'text-amber-500'}`} />
                       {cat.label}
                     </button>
                   );
@@ -419,11 +421,11 @@ const CasesLibrary: React.FC = () => {
                       onClick={() => setSelectedType(type.key)}
                       className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                         selectedType === type.key
-                          ? 'bg-indigo-600 text-white shadow-md'
-                          : 'bg-white text-gray-700 border border-gray-200 hover:border-indigo-300 hover:text-indigo-600'
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg glow-purple'
+                          : 'bg-white/60 backdrop-blur-sm text-gray-700 border border-purple-200/50 hover:border-purple-300 hover:text-purple-600 hover:glow-purple'
                       }`}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon className={`w-4 h-4 ${selectedType === type.key ? 'text-white' : 'text-purple-500'}`} />
                       {type.label}
                     </button>
                   );

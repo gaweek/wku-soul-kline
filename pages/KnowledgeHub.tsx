@@ -46,14 +46,14 @@ const KnowledgeHub: React.FC = () => {
 
       <div className="min-h-screen bg-gray-50">
         {/* Hero Section */}
-        <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-700 text-white">
+        <div className="starfield-bg text-white">
           <div className="max-w-7xl mx-auto px-4 py-16 md:py-24">
             <div className="flex flex-col items-center text-center">
               <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl mb-6">
                 <BookOpen className="w-12 h-12" />
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold font-serif-sc mb-4">
-                知识中心
+              <h1 className="text-4xl md:text-5xl font-bold font-serif-sc mb-4 bg-gradient-to-r from-yellow-200 via-yellow-400 to-amber-400 text-transparent bg-clip-text">
+                知识殿堂
               </h1>
               <p className="text-lg md:text-xl text-indigo-100 max-w-2xl mb-8">
                 从入门到精通，系统学习八字命理与人生K线解读方法。
@@ -75,8 +75,8 @@ const KnowledgeHub: React.FC = () => {
                 onClick={() => setSelectedCategory(cat.key)}
                 className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
                   selectedCategory === cat.key
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:border-indigo-300 hover:text-indigo-600'
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/50'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:border-purple-300 hover:text-purple-600'
                 }`}
               >
                 {cat.label}

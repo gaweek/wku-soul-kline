@@ -343,10 +343,12 @@ const HomePage: React.FC<HomePageProps> = ({
             {!result && (
               <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8 animate-fade-in">
                 <div className="text-center max-w-2xl">
-                  <h2 className="text-4xl md:text-5xl font-serif-sc font-bold text-gray-900 mb-6">
-                    洞悉命运起伏 <br/><span className="text-indigo-600">预见人生轨迹</span>
+                  <h2 className="text-4xl md:text-5xl font-serif-sc font-bold mb-6">
+                    <span className="bg-gradient-to-r from-purple-600 via-purple-500 to-golden-400 bg-clip-text text-transparent">
+                      洞悉命运起伏 预见人生轨迹
+                    </span>
                   </h2>
-                  <p className="text-gray-600 text-lg leading-relaxed mb-8">
+                  <p className="text-gray-500 text-lg leading-relaxed mb-8">
                     结合<strong>传统八字命理</strong>与<strong>金融可视化技术</strong>，将您的一生运势绘制成类似股票行情的K线图。
                   </p>
                 </div>

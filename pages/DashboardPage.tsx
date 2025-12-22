@@ -259,8 +259,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
-          <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <User className="w-8 h-8 text-indigo-600" />
+          <div className="w-16 h-16 bg-mystic-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <User className="w-8 h-8 text-mystic-600" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">需要登录</h2>
           <p className="text-gray-600 mb-6">
@@ -268,7 +268,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
           </p>
           <button
             onClick={onLoginClick}
-            className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all"
+            className="w-full py-3 bg-gradient-mystic text-white font-bold rounded-lg hover:opacity-90 shadow-glow-purple transition-opacity"
           >
             登录
           </button>
@@ -296,31 +296,31 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             </button>
           </div>
 
-          {/* Points Balance with Animation */}
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white">
+          {/* Points Balance with Animation - 用户档案卡片：紫色渐变背景 */}
+          <div className="bg-gradient-mystic rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white shadow-glow-purple">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2 mb-2">
-                  <Coins className="w-5 h-5 sm:w-6 sm:h-6" />
+                  <Coins className="w-5 h-5 sm:w-6 sm:h-6 text-golden-300" />
                   <span className="text-base sm:text-lg font-medium">积分余额</span>
                 </div>
-                <div className="text-3xl sm:text-4xl font-bold">
+                <div className="text-3xl sm:text-4xl font-bold text-golden-300">
                   {animatedPoints.toLocaleString()}
                 </div>
-                <p className="text-xs sm:text-sm text-indigo-100 mt-1">可用于分析测算</p>
+                <p className="text-xs sm:text-sm text-white/90 mt-1">可用于分析测算</p>
               </div>
               <div className="text-right flex-shrink-0 ml-4">
                 <div className="text-xl sm:text-2xl mb-1">🎯</div>
-                <p className="text-xs sm:text-sm text-indigo-100 whitespace-nowrap">等级 {Math.floor((userInfo?.points || 0) / 100) + 1}</p>
+                <p className="text-xs sm:text-sm text-white/90 whitespace-nowrap">等级 {Math.floor((userInfo?.points || 0) / 100) + 1}</p>
               </div>
             </div>
 
             {/* Voucher Redemption */}
-            <div className="mt-4 pt-4 border-t border-white/20">
+            <div className="mt-4 pt-4 border-t border-white/30">
               {!showRedeemInput ? (
                 <button
                   onClick={() => setShowRedeemInput(true)}
-                  className="flex items-center gap-2 text-sm text-indigo-100 hover:text-white transition-colors"
+                  className="flex items-center gap-2 text-sm text-golden-200 hover:text-golden-100 transition-colors"
                 >
                   <Ticket className="w-4 h-4" />
                   <span>兑换点券</span>
@@ -340,7 +340,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     <button
                       onClick={handleRedeem}
                       disabled={isRedeeming || !voucherCode.trim()}
-                      className="px-4 py-2 bg-white text-indigo-600 rounded-lg font-medium hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                      className="px-4 py-2 bg-gradient-golden text-white rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                     >
                       {isRedeeming ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -384,10 +384,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <button
             onClick={handleAddProfile}
-            className="bg-white p-3 sm:p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow text-center group"
+            className="bg-white p-3 sm:p-4 rounded-xl shadow-sm hover:shadow-glow-purple transition-shadow text-center group"
           >
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:bg-blue-200 transition-colors">
-              <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-mystic-100 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:bg-mystic-200 transition-colors">
+              <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-mystic-600" />
             </div>
             <span className="text-xs sm:text-sm font-medium text-gray-700 block truncate px-1">添加档案</span>
           </button>
@@ -406,18 +406,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             onClick={() => navigate('/knowledge')}
             className="bg-white p-3 sm:p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow text-center group"
           >
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:bg-purple-200 transition-colors">
-              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:bg-blue-200 transition-colors">
+              <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
             </div>
             <span className="text-xs sm:text-sm font-medium text-gray-700 block truncate px-1">了解更多</span>
           </button>
 
           <button
             onClick={() => navigate('/cases')}
-            className="bg-white p-3 sm:p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow text-center group"
+            className="bg-white p-3 sm:p-4 rounded-xl shadow-sm hover:shadow-glow-golden transition-shadow text-center group"
           >
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:bg-amber-200 transition-colors">
-              <Eye className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-golden-100 rounded-full flex items-center justify-center mx-auto mb-2 group-hover:bg-golden-200 transition-colors">
+              <Eye className="w-5 h-5 sm:w-6 sm:h-6 text-golden-600" />
             </div>
             <span className="text-xs sm:text-sm font-medium text-gray-700 block truncate px-1">浏览案例</span>
           </button>
@@ -440,7 +440,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`flex-1 flex items-center justify-center space-x-1.5 sm:space-x-2 py-3 sm:py-4 px-3 sm:px-6 font-medium text-sm sm:text-base transition-colors whitespace-nowrap min-w-0 ${
                   activeTab === tab.id
-                    ? 'text-indigo-600 border-b-2 border-indigo-600 bg-indigo-50'
+                    ? 'text-mystic-600 border-b-2 border-mystic-600 bg-mystic-50'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                 }`}
               >
@@ -454,14 +454,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
           <div className="p-4 sm:p-6">
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                <Loader2 className="w-8 h-8 text-mystic-600 animate-spin" />
               </div>
             ) : error ? (
               <div className="text-center py-12">
                 <p className="text-red-600 mb-4">{error}</p>
                 <button
                   onClick={() => window.location.reload()}
-                  className="text-indigo-600 hover:text-indigo-800"
+                  className="text-mystic-600 hover:text-mystic-800"
                 >
                   重试
                 </button>
@@ -485,9 +485,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                         <div className="text-xl sm:text-2xl font-bold text-gray-900">{stats.totalShares}</div>
                         <div className="text-xs sm:text-sm text-gray-600 truncate">分享次数</div>
                       </div>
-                      <div className="bg-gray-50 p-3 sm:p-4 rounded-lg">
-                        <div className="text-xl sm:text-2xl font-bold text-gray-900">{stats.pointsEarned}</div>
-                        <div className="text-xs sm:text-sm text-gray-600 truncate">获得积分</div>
+                      <div className="bg-gradient-to-br from-golden-50 to-golden-100 p-3 sm:p-4 rounded-lg border border-golden-200">
+                        <div className="text-xl sm:text-2xl font-bold text-golden-700">{stats.pointsEarned}</div>
+                        <div className="text-xs sm:text-sm text-golden-600 truncate">获得积分</div>
                       </div>
                     </div>
 
@@ -519,12 +519,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                         <div className="space-y-2">
                           {shareRewards.length > 0 ? (
                             shareRewards.slice(0, 3).map(reward => (
-                              <div key={reward.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg gap-2">
+                              <div key={reward.id} className="flex items-center justify-between p-3 bg-gradient-to-r from-golden-50 to-amber-50 border border-golden-200 rounded-lg gap-2">
                                 <div className="flex-1 min-w-0">
                                   <div className="font-medium text-sm sm:text-base text-gray-900">获得积分</div>
                                   <div className="text-xs sm:text-sm text-gray-500 truncate">{formatTime(reward.createdAt)}</div>
                                 </div>
-                                <span className="text-green-600 font-medium whitespace-nowrap flex-shrink-0">+{reward.points}</span>
+                                <span className="text-golden-600 font-bold whitespace-nowrap flex-shrink-0">+{reward.points}</span>
                               </div>
                             ))
                           ) : (
@@ -534,12 +534,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                       </div>
                     </div>
 
-                    {/* Fortune Preview */}
-                    <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-4 sm:p-6 rounded-xl">
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">今日运势</h3>
+                    {/* Fortune Preview - 今日运势卡片：白色背景，金色边框 */}
+                    <div className="bg-white border-2 border-golden-400 p-4 sm:p-6 rounded-xl shadow-glow-golden">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <span className="text-golden-500">🌟</span>
+                        今日运势
+                      </h3>
                       <div className="text-sm sm:text-base text-gray-700">
-                        <p className="mb-2">🌟 Your luck is looking positive today! Consider making important decisions.</p>
-                        <p className="text-xs sm:text-sm text-gray-600">Lucky numbers: 7, 14, 21 | Lucky color: Blue</p>
+                        <p className="mb-2">您的运势今日看起来非常积极！适合做出重要决定。</p>
+                        <p className="text-xs sm:text-sm text-golden-600 font-medium">幸运数字: 7, 14, 21 | 幸运颜色: 蓝色</p>
                       </div>
                     </div>
                   </div>
@@ -559,28 +562,28 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                       <p className="text-sm sm:text-base text-gray-600 mb-6 px-4">获取基于您八字分析的个性化运势解读</p>
                       <button
                         onClick={() => navigate('/')}
-                        className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-sm sm:text-base font-medium rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all"
+                        className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-golden text-white text-sm sm:text-base font-medium rounded-lg hover:opacity-90 shadow-glow-golden transition-opacity"
                       >
                         开始新分析
                       </button>
                     </div>
 
                     <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
-                      <div className="bg-amber-50 p-4 sm:p-6 rounded-xl">
+                      <div className="bg-amber-50 p-4 sm:p-6 rounded-xl hover:shadow-glow-purple transition-shadow">
                         <h4 className="font-semibold text-sm sm:text-base text-gray-900 mb-2">📅 本周运势</h4>
-                        <p className="text-xs sm:text-sm text-gray-700">A favorable week for career opportunities. Stay open to new connections.</p>
+                        <p className="text-xs sm:text-sm text-gray-700">本周职业发展机会良好，保持开放心态迎接新的联系。</p>
                       </div>
-                      <div className="bg-blue-50 p-4 sm:p-6 rounded-xl">
+                      <div className="bg-blue-50 p-4 sm:p-6 rounded-xl hover:shadow-glow-purple transition-shadow">
                         <h4 className="font-semibold text-sm sm:text-base text-gray-900 mb-2">💰 财运展望</h4>
-                        <p className="text-xs sm:text-sm text-gray-700">Financial stability is improving. Avoid impulsive investments.</p>
+                        <p className="text-xs sm:text-sm text-gray-700">财务状况正在改善，避免冲动投资。</p>
                       </div>
-                      <div className="bg-pink-50 p-4 sm:p-6 rounded-xl">
+                      <div className="bg-pink-50 p-4 sm:p-6 rounded-xl hover:shadow-glow-purple transition-shadow">
                         <h4 className="font-semibold text-sm sm:text-base text-gray-900 mb-2">❤️ 感情运势</h4>
-                        <p className="text-xs sm:text-sm text-gray-700">Harmonious relationships await. Express your feelings honestly.</p>
+                        <p className="text-xs sm:text-sm text-gray-700">和谐的关系即将到来，真诚表达你的感受。</p>
                       </div>
-                      <div className="bg-green-50 p-4 sm:p-6 rounded-xl">
+                      <div className="bg-green-50 p-4 sm:p-6 rounded-xl hover:shadow-glow-purple transition-shadow">
                         <h4 className="font-semibold text-sm sm:text-base text-gray-900 mb-2">🌟 健康运势</h4>
-                        <p className="text-xs sm:text-sm text-gray-700">Energy levels are high. Maintain your exercise routine.</p>
+                        <p className="text-xs sm:text-sm text-gray-700">精力充沛，保持运动习惯。</p>
                       </div>
                     </div>
                   </div>
@@ -593,7 +596,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                       <h3 className="text-base sm:text-lg font-semibold text-gray-900">分析历史</h3>
                       <button
                         onClick={() => navigate('/')}
-                        className="text-indigo-600 hover:text-indigo-800 text-xs sm:text-sm"
+                        className="text-mystic-600 hover:text-mystic-800 text-xs sm:text-sm font-medium"
                       >
                         查看全部
                       </button>
@@ -628,7 +631,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                         <p className="text-sm sm:text-base text-gray-500 mb-4">暂无分析历史</p>
                         <button
                           onClick={() => navigate('/')}
-                          className="text-sm sm:text-base text-indigo-600 hover:text-indigo-800"
+                          className="text-sm sm:text-base text-mystic-600 hover:text-mystic-800 font-medium"
                         >
                           开始您的第一次分析
                         </button>

@@ -90,7 +90,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => results && setIsOpen(true)}
             placeholder={placeholder}
-            className="w-full pl-12 pr-12 py-3 bg-white border border-gray-200 rounded-xl text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all shadow-sm"
+            className="glass-card w-full pl-12 pr-12 py-3 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all"
           />
           {loading && (
             <Loader2 className="absolute right-12 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-500 animate-spin" />

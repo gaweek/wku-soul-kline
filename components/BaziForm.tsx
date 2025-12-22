@@ -202,9 +202,9 @@ const BaziForm: React.FC<BaziFormProps> = ({ onSubmit, isLoading, isLoggedIn }) 
   }, [formData.yearPillar, formData.gender]);
 
   return (
-    <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
+    <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border-2 border-golden-300 shadow-glow-golden">
       <div className="text-center mb-6">
-        <h2 className="text-3xl font-serif-sc font-bold text-gray-800 mb-2">八字排盘</h2>
+        <h2 className="text-3xl font-serif-sc font-bold text-purple-700 mb-2">八字排盘</h2>
         <p className="text-gray-500 text-sm">请输入四柱与大运信息以生成分析</p>
       </div>
 
@@ -231,8 +231,8 @@ const BaziForm: React.FC<BaziFormProps> = ({ onSubmit, isLoading, isLoggedIn }) 
                 onClick={() => setFormData({ ...formData, gender: Gender.MALE })}
                 className={`flex-1 py-1.5 rounded-md text-xs font-medium transition ${
                   formData.gender === Gender.MALE
-                    ? 'bg-white text-indigo-700 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-sm'
+                    : 'bg-white text-gray-500 hover:text-gray-700 border border-gray-300'
                 }`}
               >
                 乾造 (男)
@@ -242,8 +242,8 @@ const BaziForm: React.FC<BaziFormProps> = ({ onSubmit, isLoading, isLoggedIn }) 
                 onClick={() => setFormData({ ...formData, gender: Gender.FEMALE })}
                 className={`flex-1 py-1.5 rounded-md text-xs font-medium transition ${
                   formData.gender === Gender.FEMALE
-                    ? 'bg-white text-pink-700 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-sm'
+                    : 'bg-white text-gray-500 hover:text-gray-700 border border-gray-300'
                 }`}
               >
                 坤造 (女)
@@ -261,8 +261,8 @@ const BaziForm: React.FC<BaziFormProps> = ({ onSubmit, isLoading, isLoggedIn }) 
               onClick={() => setUseSmartInput(true)}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold transition-all ${
                 useSmartInput
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
               }`}
             >
               <Zap className="w-4 h-4" />
@@ -273,8 +273,8 @@ const BaziForm: React.FC<BaziFormProps> = ({ onSubmit, isLoading, isLoggedIn }) 
               onClick={() => setUseSmartInput(false)}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-bold transition-all ${
                 !useSmartInput
-                  ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
               }`}
             >
               <Edit3 className="w-4 h-4" />
@@ -499,7 +499,7 @@ const BaziForm: React.FC<BaziFormProps> = ({ onSubmit, isLoading, isLoggedIn }) 
           className={`w-full font-bold py-3.5 rounded-xl shadow-lg transform transition-all flex items-center justify-center gap-2 ${
             !isBaziComplete
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-gradient-to-r from-indigo-900 to-gray-900 hover:from-black hover:to-black text-white hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed'
+              : 'bg-gradient-golden hover:shadow-glow-golden text-white hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed'
           }`}
         >
           {isLoading ? (

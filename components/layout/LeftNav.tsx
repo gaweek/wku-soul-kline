@@ -154,16 +154,16 @@ const LeftNav: React.FC<LeftNavProps> = ({
   const displayHistory = historyExpanded ? history : history.slice(0, 3);
 
   return (
-    <div className="flex flex-col h-full p-4">
+    <div className="flex flex-col h-full p-4 bg-[#fef9f3]">
       {/* Logo with Pro Badge */}
       <NavLink to="/" className="flex items-center gap-3 mb-8 hover:opacity-80 transition-opacity">
-        <div className="bg-black text-white p-2 rounded-lg">
+        <div className="bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 text-white p-2 rounded-lg shadow-md">
           <Sparkles className="w-6 h-6" />
         </div>
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-serif-sc font-bold text-gray-900 tracking-wide">人生K线</h1>
-            <span className="px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full shadow-sm">
+            <span className="px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white rounded-full shadow-sm">
               Pro
             </span>
           </div>
@@ -178,8 +178,8 @@ const LeftNav: React.FC<LeftNavProps> = ({
           className={({ isActive }) =>
             `flex items-center gap-4 px-4 py-3 rounded-full transition-all ${
               isActive
-                ? 'bg-indigo-100 text-indigo-700 font-semibold'
-                : 'text-gray-700 hover:bg-gray-100'
+                ? 'bg-purple-100 text-purple-700 font-semibold'
+                : 'text-gray-600 hover:bg-[#f5f0ea] hover:text-gray-800'
             }`
           }
         >
@@ -192,8 +192,8 @@ const LeftNav: React.FC<LeftNavProps> = ({
           className={({ isActive }) =>
             `flex items-center gap-4 px-4 py-3 rounded-full transition-all ${
               isActive
-                ? 'bg-indigo-100 text-indigo-700 font-semibold'
-                : 'text-gray-700 hover:bg-gray-100'
+                ? 'bg-purple-100 text-purple-700 font-semibold'
+                : 'text-gray-600 hover:bg-[#f5f0ea] hover:text-gray-800'
             }`
           }
         >
@@ -206,8 +206,8 @@ const LeftNav: React.FC<LeftNavProps> = ({
           className={({ isActive }) =>
             `flex items-center gap-4 px-4 py-3 rounded-full transition-all ${
               isActive
-                ? 'bg-indigo-100 text-indigo-700 font-semibold'
-                : 'text-gray-700 hover:bg-gray-100'
+                ? 'bg-purple-100 text-purple-700 font-semibold'
+                : 'text-gray-600 hover:bg-[#f5f0ea] hover:text-gray-800'
             }`
           }
         >
@@ -222,8 +222,8 @@ const LeftNav: React.FC<LeftNavProps> = ({
             className={({ isActive }) =>
               `flex items-center gap-4 px-4 py-3 rounded-full transition-all ${
                 isActive || location.pathname.startsWith('/dashboard')
-                  ? 'bg-indigo-100 text-indigo-700 font-semibold'
-                  : 'text-gray-700 hover:bg-gray-100'
+                  ? 'bg-purple-100 text-purple-700 font-semibold'
+                  : 'text-gray-600 hover:bg-[#f5f0ea] hover:text-gray-800'
               }`
             }
           >
@@ -237,7 +237,7 @@ const LeftNav: React.FC<LeftNavProps> = ({
           href="https://t.me/+HmqljTJNwaIxZDJl"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-4 px-4 py-3 rounded-full bg-[#0088cc] text-white hover:bg-[#0077b3] transition-all shadow-sm mt-4"
+          className="flex items-center gap-4 px-4 py-3 rounded-full bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white hover:shadow-lg hover:shadow-amber-300/50 transition-all shadow-md mt-4 font-medium"
         >
           <Send className="w-6 h-6" />
           <span className="text-lg font-medium">Telegram社群</span>
@@ -267,7 +267,7 @@ const LeftNav: React.FC<LeftNavProps> = ({
             {onNewCalculation && (
               <button
                 onClick={onNewCalculation}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 mt-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg hover:from-indigo-600 hover:to-purple-600 transition-all text-sm font-medium"
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 mt-2 bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 text-white rounded-lg hover:shadow-lg hover:shadow-amber-300/40 transition-all text-sm font-medium shadow-md"
               >
                 <Plus className="w-4 h-4" />
                 新建测算
@@ -283,7 +283,7 @@ const LeftNav: React.FC<LeftNavProps> = ({
                 >
                   <button
                     onClick={() => onHistorySelect && item.result && item.input && onHistorySelect(item.result, item.input)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left rounded-lg hover:bg-gray-100 transition-colors"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left rounded-lg hover:bg-[#f5f0ea] transition-colors"
                   >
                     <User className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -310,7 +310,7 @@ const LeftNav: React.FC<LeftNavProps> = ({
             {history.length > 3 && (
               <button
                 onClick={() => setHistoryExpanded(!historyExpanded)}
-                className="w-full text-center text-xs text-indigo-600 hover:text-indigo-700 py-2"
+                className="w-full text-center text-xs text-purple-600 hover:text-purple-700 py-2 font-medium"
               >
                 {historyExpanded ? '收起' : `查看全部 ${history.length} 条`}
               </button>
@@ -320,23 +320,23 @@ const LeftNav: React.FC<LeftNavProps> = ({
       </nav>
 
       {/* User Status Section */}
-      <div className="mt-auto pt-4 border-t border-gray-200">
+      <div className="mt-auto pt-4 border-t border-amber-200/30">
         {isLoggedIn && userInfo ? (
           <div className="space-y-3">
             {/* User Info Display */}
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-xl border border-indigo-100">
+            <div className="bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 p-4 rounded-xl shadow-lg">
               <div className="flex items-center gap-2 mb-2">
-                <User className="w-4 h-4 text-indigo-600" />
-                <span className="text-sm font-medium text-gray-900 truncate">
+                <User className="w-4 h-4 text-white/90" />
+                <span className="text-sm font-medium text-white truncate">
                   {userInfo.email.split('@')[0]}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Coins className="w-5 h-5 text-amber-500" />
-                <span className="text-lg font-bold text-amber-600">
+                <Coins className="w-5 h-5 text-amber-400" />
+                <span className="text-lg font-bold text-amber-300">
                   {userInfo.points}
                 </span>
-                <span className="text-xs text-gray-500">点</span>
+                <span className="text-xs text-white/80">点</span>
               </div>
             </div>
 
@@ -354,7 +354,7 @@ const LeftNav: React.FC<LeftNavProps> = ({
             {/* Login Button */}
             <button
               onClick={onLoginClick}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition-all border border-gray-300"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-purple-700 hover:bg-[#f5f0ea] rounded-lg transition-all border border-gray-300"
             >
               <LogIn className="w-4 h-4" />
               登录
@@ -363,7 +363,7 @@ const LeftNav: React.FC<LeftNavProps> = ({
             {/* Register Button */}
             <button
               onClick={onLoginClick}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-lg shadow-sm transition-all"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 hover:shadow-lg hover:shadow-amber-300/50 rounded-lg shadow-md transition-all"
             >
               <UserPlus className="w-4 h-4" />
               注册

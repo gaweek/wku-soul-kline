@@ -58,12 +58,28 @@
 
 <table>
   <tr>
-    <td><img src="assets/1.png" alt="人生K线图" /></td>
-    <td><img src="assets/2.png" alt="命理分析报告" /></td>
+    <td><img src="assets/screenshot-home.jpg" alt="首页 - 八字排盘" /></td>
+    <td><img src="assets/screenshot-kline.jpg" alt="人生K线图" /></td>
   </tr>
   <tr>
+    <td align="center"><em>首页 - 智能八字排盘</em></td>
     <td align="center"><em>人生流年大运 K 线走势图</em></td>
+  </tr>
+  <tr>
+    <td><img src="assets/screenshot-analysis.jpg" alt="命理分析报告" /></td>
+    <td><img src="assets/screenshot-dashboard.jpg" alt="仪表盘" /></td>
+  </tr>
+  <tr>
     <td align="center"><em>AI 深度命理分析报告</em></td>
+    <td align="center"><em>个人仪表盘 - 今日运势</em></td>
+  </tr>
+  <tr>
+    <td><img src="assets/screenshot-cases.jpg" alt="命运案例库" /></td>
+    <td><img src="assets/screenshot-knowledge.jpg" alt="知识殿堂" /></td>
+  </tr>
+  <tr>
+    <td align="center"><em>命运案例库 - 名人命盘</em></td>
+    <td align="center"><em>知识殿堂 - 命理学习</em></td>
   </tr>
 </table>
 

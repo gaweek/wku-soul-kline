@@ -542,8 +542,8 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
                             onClick={() => handleSelectProvince(province)}
                             className={`px-2 py-1.5 text-xs rounded-lg transition-colors ${
                               selectedProvince === province
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-gray-50 hover:bg-indigo-100 text-gray-700'
+                                ? 'bg-purple-600 text-white'
+                                : 'bg-gray-50 hover:bg-purple-100 text-gray-700'
                             }`}
                           >
                             {province.replace(/省|市|自治区|特别行政区|壮族|维吾尔|回族/g, '')}

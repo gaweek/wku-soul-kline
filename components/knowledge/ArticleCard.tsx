@@ -23,7 +23,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article }) => {
   return (
     <Link
       to={`/knowledge/${article.slug}`}
-      className="group block bg-white rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-lg transition-all duration-300 overflow-hidden"
+      className="group block bg-white rounded-xl border border-gray-200 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/30 transition-all duration-300 overflow-hidden"
     >
       {/* Card Header */}
       <div className="p-5">
