@@ -383,6 +383,36 @@ const initDatabase = () => {
     )
   `);
 
+  // 定价配置表
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS pricing_config (
+      id TEXT PRIMARY KEY,
+      feature_key TEXT UNIQUE NOT NULL,
+      points_cost INTEGER NOT NULL,
+      price_usd REAL,
+      price_cny REAL,
+      display_name TEXT,
+      category TEXT,
+      is_active INTEGER DEFAULT 1,
+      updated_at TEXT
+    )
+  `);
+
+  // 积分套餐表
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS point_packages (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      points_amount INTEGER NOT NULL,
+      price_usd REAL NOT NULL,
+      price_cny REAL NOT NULL,
+      bonus_points INTEGER DEFAULT 0,
+      is_recommended INTEGER DEFAULT 0,
+      display_order INTEGER DEFAULT 999,
+      is_active INTEGER DEFAULT 1
+    )
+  `);
+
   // 创建索引
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -430,6 +460,12 @@ const initDatabase = () => {
     -- 密码重置令牌索引
     CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_token ON password_reset_tokens(token);
     CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
+
+    -- 定价配置索引
+    CREATE INDEX IF NOT EXISTS idx_pricing_feature ON pricing_config(feature_key);
+
+    -- 积分套餐索引
+    CREATE INDEX IF NOT EXISTS idx_packages_order ON point_packages(display_order);
   `);
 
   // 名人案例表新增字段 (Schema Migration)
@@ -456,6 +492,15 @@ const initDatabase = () => {
 
 // 初始化数据库
 initDatabase();
+
+// 初始化定价表
+import('./pricingManager.js')
+  .then(module => {
+    module.initializePricingTables();
+  })
+  .catch(err => {
+    console.error('定价表初始化失败:', err);
+  });
 
 // ============ 用户操作 ============
 

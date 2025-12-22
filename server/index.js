@@ -75,6 +75,7 @@ import { sendVerificationEmail, sendPasswordResetEmail } from './emailService.js
 import { BAZI_SYSTEM_INSTRUCTION, buildUserPrompt } from './prompt.js';
 import { handleAnalyzeStream } from './analyzeStream.js';
 import { handleParallelAnalyzeStream } from './analyzeParallelStream.js';
+import { handleUnifiedAnalyzeStream } from './analyzeUnifiedStream.js';
 import { calculateLifeTimeline, calculate36MonthTimeline, generate36MonthFallbackKLine, calculate7MonthTimeline, generate7MonthFallbackKLine, calculate61DayTimeline, generate61DayFallbackKLine } from './baziCalculator.js';
 import { getCacheStats, computeBaziHash, getCachedAnalysis } from './cacheManager.js';
 import { POINTS_CONFIG, getFeatureCost, checkUserPoints, deductUserPoints } from './pointsManager.js';
@@ -82,6 +83,15 @@ import { AGENT_DAILY_FORTUNE_PROMPT } from './agentPrompts.js';
 import { generateCelebrityAnalysis } from './celebrityAnalyzer.js';
 import { regenerateCoreDocument } from './coreDocumentEngine.js';
 import { startEmailScheduler } from './emailScheduler.js';
+import {
+  getPricing,
+  updatePricing,
+  batchUpdatePricing,
+  getPointPackages,
+  updatePointPackage,
+  batchUpdatePointPackages,
+  getPublicPricing,
+} from './pricingManager.js';
 
 dotenv.config();
 
@@ -236,7 +246,7 @@ app.post('/api/analyze-stream', async (req, res) => {
   return handleAnalyzeStream(req, res);
 });
 
-// 新增并行分析端点 (5个Agent并行 + 缓存)
+// 新增并行分析端点 (6个Agent并行 + 缓存)
 app.post('/api/analyze-parallel', async (req, res) => {
   const body = req.body || {};
   const useCustomApi = Boolean(body.useCustomApi);
@@ -259,6 +269,32 @@ app.post('/api/analyze-parallel', async (req, res) => {
 
   req.__authedInfo = authedInfo;
   return handleParallelAnalyzeStream(req, res);
+});
+
+// 新增统一分析端点 (单Agent模式 + 缓存)
+// 优势：API调用次数减少83%（6次→1次），成本显著降低
+app.post('/api/analyze-unified', async (req, res) => {
+  const body = req.body || {};
+  const useCustomApi = Boolean(body.useCustomApi);
+
+  let authedInfo = null;
+
+  if (!useCustomApi) {
+    let info = getAuthedUser(req);
+
+    if (info) {
+      authedInfo = info;
+      if (info.user.points < COST_PER_ANALYSIS) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.write(`event: error\n`);
+        res.write(`data: ${JSON.stringify({ error: 'INSUFFICIENT_POINTS', points: info.user.points })}\n\n`);
+        return res.end();
+      }
+    }
+  }
+
+  req.__authedInfo = authedInfo;
+  return handleUnifiedAnalyzeStream(req, res);
 });
 
 // 获取缓存统计信息
@@ -2854,6 +2890,113 @@ app.post('/api/kline/daily', async (req, res) => {
 
   } catch (error) {
     console.error('生成61天K线失败:', error);
+    return res.status(500).json({ error: 'INTERNAL_ERROR', message: error.message });
+  }
+});
+
+// ============ Pricing Management API ============
+
+// GET /api/admin/pricing - Get all pricing configuration
+app.get('/api/admin/pricing', (req, res) => {
+  try {
+    const features = getPricing();
+    const packages = getPointPackages();
+
+    return res.json({
+      features,
+      packages
+    });
+  } catch (error) {
+    console.error('获取定价配置失败:', error);
+    return res.status(500).json({ error: 'INTERNAL_ERROR', message: error.message });
+  }
+});
+
+// PUT /api/admin/pricing - Update pricing configuration
+app.put('/api/admin/pricing', (req, res) => {
+  try {
+    const { features } = req.body;
+
+    if (!features || !Array.isArray(features)) {
+      return res.status(400).json({ error: 'INVALID_INPUT', message: 'features must be an array' });
+    }
+
+    // 批量更新功能定价
+    const configs = features.map(f => ({
+      feature_key: f.feature_key,
+      points: f.points,
+      price_usd: f.price_usd,
+      price_cny: f.price_cny,
+      display_name: f.display_name,
+      category: f.category
+    }));
+
+    const result = batchUpdatePricing(configs);
+
+    if (!result.success) {
+      return res.status(500).json({ error: 'UPDATE_FAILED', message: result.error });
+    }
+
+    logEvent('info', '更新定价配置', { updated: result.updated }, null, req.ip);
+
+    return res.json({
+      success: true,
+      updated: result.updated,
+      message: `成功更新 ${result.updated} 项配置`
+    });
+  } catch (error) {
+    console.error('更新定价配置失败:', error);
+    return res.status(500).json({ error: 'INTERNAL_ERROR', message: error.message });
+  }
+});
+
+// GET /api/admin/packages - Get point packages
+app.get('/api/admin/packages', (req, res) => {
+  try {
+    const packages = getPointPackages();
+    return res.json({ packages });
+  } catch (error) {
+    console.error('获取积分套餐失败:', error);
+    return res.status(500).json({ error: 'INTERNAL_ERROR', message: error.message });
+  }
+});
+
+// PUT /api/admin/packages - Update point packages
+app.put('/api/admin/packages', (req, res) => {
+  try {
+    const { packages } = req.body;
+
+    if (!packages || !Array.isArray(packages)) {
+      return res.status(400).json({ error: 'INVALID_INPUT', message: 'packages must be an array' });
+    }
+
+    // 批量更新积分套餐
+    const result = batchUpdatePointPackages(packages);
+
+    if (!result.success) {
+      return res.status(500).json({ error: 'UPDATE_FAILED', message: result.error });
+    }
+
+    logEvent('info', '更新积分套餐', { updated: result.updated }, null, req.ip);
+
+    return res.json({
+      success: true,
+      updated: result.updated,
+      message: `成功更新 ${result.updated} 个套餐`
+    });
+  } catch (error) {
+    console.error('更新积分套餐失败:', error);
+    return res.status(500).json({ error: 'INTERNAL_ERROR', message: error.message });
+  }
+});
+
+// GET /api/public/pricing - Get public pricing info (for frontend display)
+app.get('/api/public/pricing', (req, res) => {
+  try {
+    const pricing = getPublicPricing();
+    return res.json(pricing);
+  } catch (error) {
+    console.error('获取公开定价信息失败:', error);
     return res.status(500).json({ error: 'INTERNAL_ERROR', message: error.message });
   }
 });

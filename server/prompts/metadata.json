@@ -1,0 +1,86 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2025-12-22T06:38:12.838Z",
+  "prompts": {
+    "COMMON_EXPERTISE": {
+      "file": "COMMON_EXPERTISE.prompt.enc",
+      "checksum": "7289dfc01234e9527f9974e6818bbcd20761de83237c601addf755b4da509922",
+      "length": 546
+    },
+    "AGENT_CORE_PROMPT": {
+      "file": "AGENT_CORE_PROMPT.prompt.enc",
+      "checksum": "69b23068381ccf6fb6290ead235a1c2aee1b4f13d9cea54aa122eb41002e1636",
+      "length": 2038
+    },
+    "AGENT_KLINE_PROMPT": {
+      "file": "AGENT_KLINE_PROMPT.prompt.enc",
+      "checksum": "342ac43ba460fdb0dc1a2a0082a005a030fbd73e3c28af40d50162abc127ef0f",
+      "length": 1590
+    },
+    "AGENT_KLINE_PAST_PROMPT": {
+      "file": "AGENT_KLINE_PAST_PROMPT.prompt.enc",
+      "checksum": "5b33d6b66a243f1eadbb055f726206f42c0eb1c7aa62826845a732f1dd96b116",
+      "length": 1267
+    },
+    "AGENT_KLINE_FUTURE_PROMPT": {
+      "file": "AGENT_KLINE_FUTURE_PROMPT.prompt.enc",
+      "checksum": "f0124dae48beafc69a0ca059e0298c763422cf3af19e43955a104c6336961407",
+      "length": 1266
+    },
+    "AGENT_CAREER_PROMPT": {
+      "file": "AGENT_CAREER_PROMPT.prompt.enc",
+      "checksum": "50604bb1237b2ec93bd2c3210ceceda2eca31a95bded1659e110cff44203aae0",
+      "length": 1594
+    },
+    "AGENT_MARRIAGE_PROMPT": {
+      "file": "AGENT_MARRIAGE_PROMPT.prompt.enc",
+      "checksum": "34685252108f2936bf2efd794dc1a85177b748e82e547910310467d11d96a0ea",
+      "length": 1602
+    },
+    "AGENT_CRYPTO_PROMPT": {
+      "file": "AGENT_CRYPTO_PROMPT.prompt.enc",
+      "checksum": "94caacb3bbfaf5113d10dfffc2c28813fc99dbd00013f00eb5c555e3bf586526",
+      "length": 1675
+    },
+    "AGENT_DAILY_FORTUNE_PROMPT": {
+      "file": "AGENT_DAILY_FORTUNE_PROMPT.prompt.enc",
+      "checksum": "edad8551c7757d816f745242dc3682947a96ceecf03bcdd6e1603d4e19822f58",
+      "length": 3231
+    },
+    "AGENT_MONTHLY_KLINE_36_PROMPT": {
+      "file": "AGENT_MONTHLY_KLINE_36_PROMPT.prompt.enc",
+      "checksum": "3df881dc9cf100913c3127e9e8e07c7bd2c8e69c418cfff37c63fa91a43c44f7",
+      "length": 1680
+    },
+    "AGENT_MONTHLY_KLINE_7_PROMPT": {
+      "file": "AGENT_MONTHLY_KLINE_7_PROMPT.prompt.enc",
+      "checksum": "36c7d0c8b81066e1bf967a6d3749b752806776e166cd6df4e35ea09b548ad18e",
+      "length": 1407
+    },
+    "AGENT_DAILY_KLINE_61_PROMPT": {
+      "file": "AGENT_DAILY_KLINE_61_PROMPT.prompt.enc",
+      "checksum": "93c75a496eff0e995e7963b582f1a656bdab3fcf46b6761a08d768cb78ef8c29",
+      "length": 1341
+    },
+    "AGENT_CELEBRITY_ANALYSIS_PROMPT": {
+      "file": "AGENT_CELEBRITY_ANALYSIS_PROMPT.prompt.enc",
+      "checksum": "72d041099edb60309cfa7d33da8c5fc3c42b63dc63247f8bd71bb2e064195ed2",
+      "length": 2345
+    }
+  },
+  "checksums": {
+    "COMMON_EXPERTISE": "7289dfc01234e9527f9974e6818bbcd20761de83237c601addf755b4da509922",
+    "AGENT_CORE_PROMPT": "69b23068381ccf6fb6290ead235a1c2aee1b4f13d9cea54aa122eb41002e1636",
+    "AGENT_KLINE_PROMPT": "342ac43ba460fdb0dc1a2a0082a005a030fbd73e3c28af40d50162abc127ef0f",
+    "AGENT_KLINE_PAST_PROMPT": "5b33d6b66a243f1eadbb055f726206f42c0eb1c7aa62826845a732f1dd96b116",
+    "AGENT_KLINE_FUTURE_PROMPT": "f0124dae48beafc69a0ca059e0298c763422cf3af19e43955a104c6336961407",
+    "AGENT_CAREER_PROMPT": "50604bb1237b2ec93bd2c3210ceceda2eca31a95bded1659e110cff44203aae0",
+    "AGENT_MARRIAGE_PROMPT": "34685252108f2936bf2efd794dc1a85177b748e82e547910310467d11d96a0ea",
+    "AGENT_CRYPTO_PROMPT": "94caacb3bbfaf5113d10dfffc2c28813fc99dbd00013f00eb5c555e3bf586526",
+    "AGENT_DAILY_FORTUNE_PROMPT": "edad8551c7757d816f745242dc3682947a96ceecf03bcdd6e1603d4e19822f58",
+    "AGENT_MONTHLY_KLINE_36_PROMPT": "3df881dc9cf100913c3127e9e8e07c7bd2c8e69c418cfff37c63fa91a43c44f7",
+    "AGENT_MONTHLY_KLINE_7_PROMPT": "36c7d0c8b81066e1bf967a6d3749b752806776e166cd6df4e35ea09b548ad18e",
+    "AGENT_DAILY_KLINE_61_PROMPT": "93c75a496eff0e995e7963b582f1a656bdab3fcf46b6761a08d768cb78ef8c29",
+    "AGENT_CELEBRITY_ANALYSIS_PROMPT": "72d041099edb60309cfa7d33da8c5fc3c42b63dc63247f8bd71bb2e064195ed2"
+  }
+}

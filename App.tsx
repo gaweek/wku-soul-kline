@@ -17,6 +17,7 @@ const DailyFortunePage = lazy(() => import('./pages/DailyFortunePage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
 const AdminVoucherPage = lazy(() => import('./pages/AdminVoucherPage'));
+const AdminPricingPage = lazy(() => import('./pages/AdminPricingPage'));
 
 // Loading fallback
 const PageLoadingFallback = () => (
@@ -470,6 +471,14 @@ const App: React.FC = () => {
             element={
               <Suspense fallback={<PageLoadingFallback />}>
                 <AdminVoucherPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/admin/pricing"
+            element={
+              <Suspense fallback={<PageLoadingFallback />}>
+                <AdminPricingPage />
               </Suspense>
             }
           />

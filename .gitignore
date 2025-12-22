@@ -43,3 +43,10 @@ server/.env.production
 *.pem
 *.key
 credentials.json
+
+# Prompt Protection (可选：如果要完全保密，取消下面的注释)
+# server/prompts/*.enc
+# server/prompts/metadata.json
+
+# 原始提示词备份（不要提交到代码库）
+server/agentPrompts.original.js
