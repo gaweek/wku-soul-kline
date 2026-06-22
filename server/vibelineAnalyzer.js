@@ -69,11 +69,10 @@ const requestAgent = async (agent, input, partialState, timeoutMs = 45000) => {
       }),
     });
 
-    clearTimeout(timeoutId);
-    const elapsed = `${((Date.now() - startedAt) / 1000).toFixed(1)}s`;
-
     if (!response.ok) {
       const body = await response.text();
+      clearTimeout(timeoutId);
+      const elapsed = `${((Date.now() - startedAt) / 1000).toFixed(1)}s`;
       return {
         success: false,
         agentType: agent.type,
@@ -83,6 +82,8 @@ const requestAgent = async (agent, input, partialState, timeoutMs = 45000) => {
     }
 
     const json = await response.json();
+    clearTimeout(timeoutId);
+    const elapsed = `${((Date.now() - startedAt) / 1000).toFixed(1)}s`;
     const content = json.choices?.[0]?.message?.content;
     if (!content) {
       return { success: false, agentType: agent.type, error: 'EMPTY_RESPONSE', elapsed };
