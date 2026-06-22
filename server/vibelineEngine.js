@@ -72,59 +72,135 @@ const stripSensitiveTerms = (text = '') => {
   return cleaned.replace(/\s+/g, ' ').trim();
 };
 
-const normalizePairPerspectiveString = (text = '') => {
-  return String(text || '')
-    .replace(/A\/B\s*输入/g, '你和 Ta 的输入')
-    .replace(/基于\s*A\/B/g, '基于你和 Ta')
-    .replace(/A\/B/g, '你/Ta')
-    .replace(/A\s*的/g, '你的')
-    .replace(/B\s*的/g, 'Ta 的')
-    .replace(/让\s*A/g, '让你')
-    .replace(/B\s*接/g, 'Ta 接')
-    .replace(/A\s*未/g, '你未')
-    .replace(/B\s*未/g, 'Ta 未')
-    .replace(/A(?=[\u4e00-\u9fff])/g, '你')
-    .replace(/B(?=[\u4e00-\u9fff])/g, 'Ta ');
+const getOtherPronoun = (gender = '') => {
+  const value = String(gender || '').trim();
+  if (value === '男') return '他';
+  if (value === '女') return '她';
+  return 'Ta';
 };
 
-export const normalizePairPerspectiveCopy = (value) => {
-  if (typeof value === 'string') return normalizePairPerspectiveString(value);
-  if (Array.isArray(value)) return value.map((item) => normalizePairPerspectiveCopy(item));
+const formatOtherPossessive = (pronoun) => (pronoun === 'Ta' ? 'Ta 的' : `${pronoun}的`);
+const formatOtherVerb = (pronoun, verb) => (pronoun === 'Ta' ? `Ta ${verb}` : `${pronoun}${verb}`);
+const formatYouAndOther = (pronoun) => (pronoun === 'Ta' ? '你和 Ta' : `你和${pronoun}`);
+
+const applyOtherPronoun = (text = '', pronoun = 'Ta') => {
+  const possessive = formatOtherPossessive(pronoun);
+  let normalized = String(text || '')
+    .replace(/对方的/g, possessive)
+    .replace(/对方/g, pronoun);
+
+  if (pronoun !== 'Ta') {
+    normalized = normalized
+      .replace(/Ta\s*的/g, possessive)
+      .replace(/Ta\s*/g, pronoun);
+  }
+
+  return normalized;
+};
+
+const normalizeSinglePerspectiveString = (text = '', options = {}) => {
+  const pronoun = options.otherPronoun || getOtherPronoun(options.personBGender);
+  return applyOtherPronoun(
+    String(text || '')
+      .replace(/这位用户/g, '你')
+      .replace(/该用户/g, '你')
+      .replace(/用户/g, '你'),
+    pronoun
+  );
+};
+
+export const normalizeSinglePerspectiveCopy = (value, options = {}) => {
+  if (typeof value === 'string') return normalizeSinglePerspectiveString(value, options);
+  if (Array.isArray(value)) return value.map((item) => normalizeSinglePerspectiveCopy(item, options));
   if (value && typeof value === 'object') {
     return Object.fromEntries(
-      Object.entries(value).map(([key, item]) => [key, normalizePairPerspectiveCopy(item)])
+      Object.entries(value).map(([key, item]) => [key, normalizeSinglePerspectiveCopy(item, options)])
     );
   }
   return value;
 };
 
-export const normalizeVibeMatchVisibleCopy = (result = {}) => ({
+const normalizePairPerspectiveString = (text = '', options = {}) => {
+  const pronoun = options.otherPronoun || getOtherPronoun(options.personBGender);
+  const possessive = formatOtherPossessive(pronoun);
+  const subjectConnective = formatYouAndOther(pronoun);
+  const normalized = String(text || '')
+    .replace(/A\/B\s*输入/g, `${subjectConnective}的输入`)
+    .replace(/基于\s*A\/B/g, `基于${subjectConnective}`)
+    .replace(/A\/B/g, `你/${pronoun}`)
+    .replace(/A\s*的/g, '你的')
+    .replace(/B\s*的/g, possessive)
+    .replace(/让\s*A/g, '让你')
+    .replace(/B\s*接/g, formatOtherVerb(pronoun, '接'))
+    .replace(/A\s*未/g, '你未')
+    .replace(/B\s*未/g, formatOtherVerb(pronoun, '未'))
+    .replace(/A(?=[\u4e00-\u9fff])/g, '你')
+    .replace(/B(?=[\u4e00-\u9fff])/g, pronoun === 'Ta' ? 'Ta ' : pronoun);
+
+  return applyOtherPronoun(normalized, pronoun);
+};
+
+export const normalizePairPerspectiveCopy = (value, options = {}) => {
+  if (typeof value === 'string') return normalizePairPerspectiveString(value, options);
+  if (Array.isArray(value)) return value.map((item) => normalizePairPerspectiveCopy(item, options));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, normalizePairPerspectiveCopy(item, options)])
+    );
+  }
+  return value;
+};
+
+export const normalizeVibeLineVisibleCopy = (result = {}, options = {}) => ({
   ...result,
-  personA: result.personA
-    ? {
-        ...result.personA,
-        marketType: normalizePairPerspectiveCopy(result.personA.marketType),
-        summary: normalizePairPerspectiveCopy(result.personA.summary),
-        safety: normalizePairPerspectiveCopy(result.personA.safety),
-      }
-    : result.personA,
-  personB: result.personB
-    ? {
-        ...result.personB,
-        marketType: normalizePairPerspectiveCopy(result.personB.marketType),
-        summary: normalizePairPerspectiveCopy(result.personB.summary),
-        safety: normalizePairPerspectiveCopy(result.personB.safety),
-      }
-    : result.personB,
-  marketType: normalizePairPerspectiveCopy(result.marketType),
-  summary: normalizePairPerspectiveCopy(result.summary),
-  resonanceKline: normalizePairPerspectiveCopy(result.resonanceKline),
-  overlapSignals: normalizePairPerspectiveCopy(result.overlapSignals),
-  mismatchRisks: normalizePairPerspectiveCopy(result.mismatchRisks),
-  stageAdvice: normalizePairPerspectiveCopy(result.stageAdvice),
-  conversationBridges: normalizePairPerspectiveCopy(result.conversationBridges),
-  safety: normalizePairPerspectiveCopy(result.safety),
+  marketType: normalizeSinglePerspectiveCopy(result.marketType, options),
+  summary: normalizeSinglePerspectiveCopy(result.summary, options),
+  kline: normalizeSinglePerspectiveCopy(result.kline, options),
+  variants: normalizeSinglePerspectiveCopy(result.variants, options),
+  risingFactors: normalizeSinglePerspectiveCopy(result.risingFactors, options),
+  fallingFactors: normalizeSinglePerspectiveCopy(result.fallingFactors, options),
+  soulmateSignals: normalizeSinglePerspectiveCopy(result.soulmateSignals, options),
+  rebalanceSuggestions: normalizeSinglePerspectiveCopy(result.rebalanceSuggestions, options),
+  audienceLenses: normalizeSinglePerspectiveCopy(result.audienceLenses, options),
+  simulatedReplies: normalizeSinglePerspectiveCopy(result.simulatedReplies, options),
+  expressionTips: normalizeSinglePerspectiveCopy(result.expressionTips, options),
+  safety: normalizeSinglePerspectiveCopy(result.safety, options),
 });
+
+export const normalizeVibeMatchVisibleCopy = (result = {}, options = {}) => {
+  const pairOptions = {
+    personBGender: options.personBGender || result.input?.personB?.gender || result.personB?.input?.gender,
+    otherPronoun: options.otherPronoun,
+  };
+
+  return {
+    ...result,
+    personA: result.personA
+      ? {
+          ...result.personA,
+          marketType: normalizePairPerspectiveCopy(result.personA.marketType, pairOptions),
+          summary: normalizePairPerspectiveCopy(result.personA.summary, pairOptions),
+          safety: normalizePairPerspectiveCopy(result.personA.safety, pairOptions),
+        }
+      : result.personA,
+    personB: result.personB
+      ? {
+          ...result.personB,
+          marketType: normalizePairPerspectiveCopy(result.personB.marketType, pairOptions),
+          summary: normalizePairPerspectiveCopy(result.personB.summary, pairOptions),
+          safety: normalizePairPerspectiveCopy(result.personB.safety, pairOptions),
+        }
+      : result.personB,
+    marketType: normalizePairPerspectiveCopy(result.marketType, pairOptions),
+    summary: normalizePairPerspectiveCopy(result.summary, pairOptions),
+    resonanceKline: normalizePairPerspectiveCopy(result.resonanceKline, pairOptions),
+    overlapSignals: normalizePairPerspectiveCopy(result.overlapSignals, pairOptions),
+    mismatchRisks: normalizePairPerspectiveCopy(result.mismatchRisks, pairOptions),
+    stageAdvice: normalizePairPerspectiveCopy(result.stageAdvice, pairOptions),
+    conversationBridges: normalizePairPerspectiveCopy(result.conversationBridges, pairOptions),
+    safety: normalizePairPerspectiveCopy(result.safety, pairOptions),
+  };
+};
 
 const containsSensitiveTerm = (text = '') => {
   return FORBIDDEN_PATTERNS.some((pattern) => {
@@ -517,7 +593,7 @@ export const buildFallbackVibeLineResult = (raw = {}) => {
   const soulmateSignals = buildSoulmateSignals(input);
   const rebalanceSuggestions = buildRebalanceSuggestions(input);
 
-  return {
+  return normalizeVibeLineVisibleCopy({
     productName: 'WKU soul-kline',
     tagline: 'Who Know U? 谁懂你？谁是你的灵魂伴侣，想看看你的灵魂连接曲线？',
     input,
@@ -543,7 +619,7 @@ export const buildFallbackVibeLineResult = (raw = {}) => {
       mode: 'fallback',
       generatedAt: new Date().toISOString(),
     },
-  };
+  });
 };
 
 const unique = (items) => [...new Set(items.filter(Boolean))];
@@ -551,6 +627,15 @@ const unique = (items) => [...new Set(items.filter(Boolean))];
 const getSharedInterests = (personA, personB) => {
   const a = personA.interests.map((item) => item.toLowerCase());
   return personB.interests.filter((item) => a.includes(item.toLowerCase()));
+};
+
+const normalizePersonBSelfReference = (text = '', pronoun = 'Ta') => {
+  if (!text) return '';
+  return String(text || '')
+    .replace(/对方的/g, '你的')
+    .replace(/对方/g, '你')
+    .replace(/我的/g, formatOtherPossessive(pronoun))
+    .replace(/我/g, pronoun);
 };
 
 const buildPairSignals = (personA, personB, sharedInterests) => {
@@ -581,20 +666,25 @@ const buildPairSignals = (personA, personB, sharedInterests) => {
   ];
 };
 
-const buildPairRisks = (personA, personB) => [
-  {
-    title: '主动节奏可能错频',
-    risk: /主动|第一句|第一句话|紧张|不知道|怕/.test(`${personA.socialProblem} ${personB.socialProblem}`) ? 16 : 10,
-    evidence: `${personA.socialProblem || '你未填写具体困扰'} / ${personB.socialProblem || 'Ta 未填写具体困扰'}`,
-    suggestion: '不要一开始就追问关系结论，先用低压力话题把第一句话成本降下来。',
-  },
-  {
-    title: '标签理解可能过度简化',
-    risk: 9,
-    evidence: unique([personA.mbti, personB.mbti, personA.sbti, personB.sbti]).join('、') || '双方标签信息较少',
-    suggestion: 'MBTI、SBTI 和星座只作为破冰材料，不要替代真实观察。',
-  },
-];
+const buildPairRisks = (personA, personB) => {
+  const otherPronoun = getOtherPronoun(personB.gender);
+  const personBProblem = normalizePersonBSelfReference(personB.socialProblem, otherPronoun);
+
+  return [
+    {
+      title: '主动节奏可能错频',
+      risk: /主动|第一句|第一句话|紧张|不知道|怕/.test(`${personA.socialProblem} ${personB.socialProblem}`) ? 16 : 10,
+      evidence: `${personA.socialProblem || '你未填写具体困扰'} / ${personBProblem || `${formatOtherVerb(otherPronoun, '未')}填写具体困扰`}`,
+      suggestion: '不要一开始就追问关系结论，先用低压力话题把第一句话成本降下来。',
+    },
+    {
+      title: '标签理解可能过度简化',
+      risk: 9,
+      evidence: unique([personA.mbti, personB.mbti, personA.sbti, personB.sbti]).join('、') || '双方标签信息较少',
+      suggestion: 'MBTI、SBTI 和星座只作为破冰材料，不要替代真实观察。',
+    },
+  ];
+};
 
 const buildConversationBridges = (personA, personB, sharedInterests) => {
   const firstShared = sharedInterests[0] || personA.interests[0];
@@ -714,8 +804,9 @@ const getStageAdviceCopy = ({
 }) => {
   const topic = getPairTopic(personA, personB, sharedInterests);
   const hasSharedInterest = sharedInterests.length > 0;
+  const otherPronoun = getOtherPronoun(personB.gender);
   const aProblem = personA.socialProblem || '你的第一句话压力';
-  const bProblem = personB.socialProblem || 'Ta 的表达顾虑';
+  const bProblem = normalizePersonBSelfReference(personB.socialProblem, otherPronoun) || `${formatOtherPossessive(otherPronoun)}表达顾虑`;
   const pressureNote = avgVolatility >= 55 ? '这一段理解成本偏高，先把表达放轻。' : '这一段理解成本可控，可以多给一点真实细节。';
 
   const copyByStage = {
@@ -914,7 +1005,7 @@ export const mergeVibeLineAgentResults = (rawInput = {}, agentResults = {}) => {
   const fallback = buildFallbackVibeLineResult(input);
   const safety = agentResults.safety_authenticity?.safety || fallback.safety;
 
-  return {
+  return normalizeVibeLineVisibleCopy({
     ...fallback,
     input,
     marketType: agentResults.narrative_packaging?.marketType || agentResults.persona_asset?.marketType || fallback.marketType,
@@ -958,5 +1049,5 @@ export const mergeVibeLineAgentResults = (rawInput = {}, agentResults = {}) => {
       completedAgents: Object.keys(agentResults),
       generatedAt: new Date().toISOString(),
     },
-  };
+  });
 };

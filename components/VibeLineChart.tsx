@@ -9,6 +9,7 @@ interface VibeLineChartProps {
   data: VibeLinePoint[];
   loading?: boolean;
   modeLabel?: string;
+  loadingText?: string;
 }
 
 interface PlotPoint extends VibeLinePoint {
@@ -124,17 +125,22 @@ const DeltaBadge: React.FC<{ value: number }> = ({ value }) => (
   </span>
 );
 
-const ChartLoading: React.FC = () => (
+const ChartLoading: React.FC<{ modeLabel?: string; loadingText?: string }> = ({
+  modeLabel = 'Who Know U',
+  loadingText = 'AI 正在把样本转成连接曲线',
+}) => (
   <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-    <div className="mb-4 flex items-center justify-between gap-4">
-      <div>
-        <div className="h-5 w-40 animate-pulse rounded bg-slate-200" />
-        <div className="mt-2 h-3 w-64 animate-pulse rounded bg-slate-100" />
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+      <div className="min-w-0">
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <span className="wku-chip wku-chip-dark">{modeLabel}</span>
+          <h2 className="text-lg font-black text-slate-950">正在生成读盘</h2>
+        </div>
+        <p className="max-w-2xl text-sm font-semibold leading-6 text-slate-600">{loadingText}</p>
       </div>
-      <div className="grid grid-cols-3 gap-2">
-        {[0, 1, 2].map((item) => (
-          <div key={item} className="h-14 w-20 animate-pulse rounded-lg bg-slate-100" />
-        ))}
+      <div role="status" aria-live="polite" className="wku-loading-status">
+        <span className="wku-loading-status-dot" aria-hidden="true" />
+        <span>生成中</span>
       </div>
     </div>
     <div className="relative h-[500px] overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
@@ -142,10 +148,10 @@ const ChartLoading: React.FC = () => (
       <div className="absolute inset-x-8 top-28 h-px bg-slate-200" />
       <div className="absolute inset-x-8 top-44 h-px bg-slate-200" />
       <div className="absolute inset-x-8 top-60 h-px bg-slate-200" />
-      <div className="absolute left-8 right-8 top-28 h-8 animate-[wkuScan_1.4s_ease-in-out_infinite] rounded-full bg-teal-200/60 blur-xl" />
+      <div className="absolute left-8 right-8 top-28 h-8 animate-[wkuScan_1.4s_ease-in-out_infinite] rounded-full bg-teal-300/70 blur-xl" />
       <svg className="absolute inset-0 h-full w-full" viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`} preserveAspectRatio="none">
-        <path d={previewPath} fill="none" stroke="#0f766e" strokeOpacity="0.14" strokeWidth="11" strokeLinecap="round" />
-        <path className="wku-preview-line" d={previewPath} fill="none" stroke="#14b8a6" strokeWidth="4.6" strokeLinecap="round" />
+        <path d={previewPath} fill="none" stroke="#0f766e" strokeOpacity="0.18" strokeWidth="12" strokeLinecap="round" />
+        <path className="wku-preview-line" d={previewPath} fill="none" stroke="#0d9488" strokeWidth="5.2" strokeLinecap="round" />
       </svg>
     </div>
   </div>
@@ -212,7 +218,8 @@ const ChartEmpty: React.FC<{ modeLabel?: string }> = ({ modeLabel = 'Who Know U'
 );
 };
 
-const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, modeLabel = 'Who Know U' }) => {
+const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, modeLabel = 'Who Know U', loadingText }) => {
+  const chartData = loading ? [] : data;
   const [activeIndex, setActiveIndex] = useState(0);
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ left: '50%', top: '30%' });
@@ -225,14 +232,14 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
     setActiveIndex(0);
     setTooltipVisible(false);
     setTooltipLocked(false);
-  }, [data.length, modeLabel]);
+  }, [chartData.length, modeLabel]);
 
   const plotData = useMemo<PlotPoint[]>(() => {
-    if (data.length === 0) return [];
-    const step = data.length > 1 ? (VIEWBOX_WIDTH - PAD_X * 2) / (data.length - 1) : 0;
-    const maxVolume = Math.max(...data.map((item) => item.volume), 1);
+    if (chartData.length === 0) return [];
+    const step = chartData.length > 1 ? (VIEWBOX_WIDTH - PAD_X * 2) / (chartData.length - 1) : 0;
+    const maxVolume = Math.max(...chartData.map((item) => item.volume), 1);
 
-    return data.map((item, index) => ({
+    return chartData.map((item, index) => ({
       ...item,
       stageName: item.stage || item.label,
       x: PAD_X + step * index,
@@ -242,7 +249,7 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
       volumeHeight: Math.max(7, (item.volume / maxVolume) * VOLUME_HEIGHT),
       delta: Math.round((item.close - item.open) * 10) / 10,
     }));
-  }, [data]);
+  }, [chartData]);
 
   const activePoint = plotData[Math.min(activeIndex, Math.max(0, plotData.length - 1))] || plotData[0];
 
@@ -446,8 +453,8 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
     );
   }, { scope: chartRef, dependencies: [activeIndex], revertOnUpdate: false });
 
-  if (loading && data.length === 0) return <ChartLoading />;
-  if (data.length === 0) return <ChartEmpty modeLabel={modeLabel} />;
+  if (loading) return <ChartLoading modeLabel={modeLabel} loadingText={loadingText} />;
+  if (chartData.length === 0) return <ChartEmpty modeLabel={modeLabel} />;
 
   return (
     <div ref={chartRef} className="wku-chart-card relative overflow-hidden p-4">

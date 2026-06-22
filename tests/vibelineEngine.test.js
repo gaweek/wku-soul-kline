@@ -13,6 +13,7 @@ const sensitiveChartTerm = '\u516b\u5b57';
 const sensitiveTrendTerm = '\u8fd0\u52bf';
 const sensitiveSystemTerm = '\u547d\u7406';
 const pairRoleLeakPattern = /(?:A\/B|A 的|A的|B 的|B的|让 A|让A|B 接|B接|A 未|B 未)/;
+const impersonalVisibleCopyPattern = /(?:用户|对方)/;
 
 const collectStringValues = (value) => {
   if (typeof value === 'string') return [value];
@@ -137,6 +138,75 @@ test('mergeVibeLineAgentResults combines agent outputs with fallback coverage', 
   assert.equal(result.simulatedReplies.length >= 5, true);
 });
 
+test('mergeVibeLineAgentResults rewrites single-person visible copy to you and Ta', () => {
+  const input = sanitizeVibeInput({
+    draft: '我是一个慢热的人，喜欢独立音乐和夜晚散步。',
+    interests: ['独立音乐', '夜晚散步'],
+  });
+
+  const result = mergeVibeLineAgentResults(input, {
+    narrative_packaging: {
+      marketType: '用户慢热连接曲线',
+      summary: '用户的独立音乐很具体，对方会从夜晚散步里找到第一句话。',
+      shareCards: [
+        {
+          id: 'market',
+          title: '用户连接短评',
+          tone: '可分享',
+          text: '用户适合让对方从一首歌开始靠近。',
+          bestFor: '给对方看',
+        },
+      ],
+      marketQuestions: ['对方可能会问用户最近在听什么？'],
+    },
+    resonance_factor: {
+      risingFactors: [
+        {
+          title: '用户兴趣明确',
+          impact: 18,
+          evidence: '用户写了独立音乐',
+          suggestion: '让对方能从一首歌接话',
+        },
+      ],
+      fallingFactors: [
+        {
+          title: '对方不一定知道怎么接',
+          risk: 10,
+          evidence: '用户说自己慢热',
+          suggestion: '给对方一个低压力问题',
+        },
+      ],
+      rebalanceSuggestions: ['用户可以把问题抛给对方。'],
+    },
+    audience_market: {
+      soulmateSignals: [
+        {
+          type: '懂用户的人',
+          resonance: 88,
+          why: '对方能接住用户的兴趣',
+          likelyReply: '用户最近听了什么？',
+        },
+      ],
+    },
+  });
+
+  const visibleCopy = collectStringValues({
+    marketType: result.marketType,
+    summary: result.summary,
+    variants: result.variants,
+    risingFactors: result.risingFactors,
+    fallingFactors: result.fallingFactors,
+    soulmateSignals: result.soulmateSignals,
+    rebalanceSuggestions: result.rebalanceSuggestions,
+    simulatedReplies: result.simulatedReplies,
+    expressionTips: result.expressionTips,
+  }).join('\n');
+
+  assert.doesNotMatch(visibleCopy, impersonalVisibleCopyPattern);
+  assert.match(visibleCopy, /你/);
+  assert.match(visibleCopy, /Ta/);
+});
+
 test('buildFallbackVibeMatchResult creates a two-person resonance report', () => {
   const result = buildFallbackVibeMatchResult({
     personA: {
@@ -203,6 +273,38 @@ test('buildFallbackVibeMatchResult uses you and Ta instead of visible A/B labels
   assert.match(visibleCopy, /Ta/);
 });
 
+test('buildFallbackVibeMatchResult uses personB gendered pronoun when provided', () => {
+  const result = buildFallbackVibeMatchResult({
+    personA: {
+      draft: '我慢热，喜欢独立音乐和电影，想认识能慢慢聊起来的人。',
+      interests: ['独立音乐', '电影'],
+      socialProblem: '第一句话容易紧张',
+    },
+    personB: {
+      draft: '我喜欢看展和摄影，聊天节奏比较温和。',
+      interests: ['看展', '摄影'],
+      gender: '女',
+      socialProblem: '怕对方觉得我太主动',
+    },
+    relationshipGoal: '想知道适不适合慢慢深聊',
+  });
+
+  const visibleCopy = collectStringValues({
+    summary: result.summary,
+    resonanceKline: result.resonanceKline,
+    overlapSignals: result.overlapSignals,
+    mismatchRisks: result.mismatchRisks,
+    stageAdvice: result.stageAdvice,
+    conversationBridges: result.conversationBridges,
+    safety: result.safety,
+  }).join('\n');
+
+  assert.doesNotMatch(visibleCopy, /\bTa\b/);
+  assert.doesNotMatch(visibleCopy, /怕她觉得我太主动/);
+  assert.match(visibleCopy, /她/);
+  assert.match(visibleCopy, /怕你觉得她太主动/);
+});
+
 test('normalizePairPerspectiveCopy rewrites model A/B labels in visible text', () => {
   assert.equal(typeof engine.normalizePairPerspectiveCopy, 'function');
 
@@ -216,4 +318,18 @@ test('normalizePairPerspectiveCopy rewrites model A/B labels in visible text', (
   assert.doesNotMatch(visibleCopy, pairRoleLeakPattern);
   assert.match(visibleCopy, /你的第一句话/);
   assert.match(visibleCopy, /Ta/);
+});
+
+test('normalizePairPerspectiveCopy can rewrite personB to a gendered pronoun', () => {
+  assert.equal(typeof engine.normalizePairPerspectiveCopy, 'function');
+
+  const normalized = engine.normalizePairPerspectiveCopy({
+    reason: 'Ta 的节奏温和，B 的表达容易被看见。',
+    suggestion: 'B 接一个生活片段，会让对方更低压力回应。',
+  }, { personBGender: '女' });
+  const visibleCopy = collectStringValues(normalized).join('\n');
+
+  assert.doesNotMatch(visibleCopy, /\bTa\b|B 的|B接|对方/);
+  assert.match(visibleCopy, /她的节奏/);
+  assert.match(visibleCopy, /她接一个生活片段/);
 });

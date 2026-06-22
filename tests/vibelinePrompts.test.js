@@ -59,6 +59,23 @@ test('Who Know Us prompts ask agents to use you and Ta in visible copy', () => {
   }
 });
 
+test('Who Know U prompts ask agents to use direct you and Ta visible copy', () => {
+  const impersonalVisibleLabels = /(?:用户|对方)/;
+
+  for (const agent of VIBELINE_AGENT_DEFINITIONS) {
+    assert.equal(impersonalVisibleLabels.test(agent.systemPrompt), false, agent.type);
+    assert.equal(agent.systemPrompt.includes('你'), true, agent.type);
+    assert.equal(agent.systemPrompt.includes('Ta'), true, agent.type);
+  }
+});
+
+test('Who Know Us prompts describe personB gendered pronoun rule', () => {
+  for (const agent of VIBEMATCH_AGENT_DEFINITIONS) {
+    assert.equal(agent.systemPrompt.includes('personB 性别为“男”时使用“他”'), true, agent.type);
+    assert.equal(agent.systemPrompt.includes('personB 性别为“女”时使用“她”'), true, agent.type);
+  }
+});
+
 test('Who Know Us analyzer does not complete from fallback builder', () => {
   const source = readFileSync(new URL('../server/vibelineMatchAnalyzer.js', import.meta.url), 'utf8');
 

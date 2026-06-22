@@ -1134,7 +1134,7 @@ const VibeLinePage: React.FC = () => {
               </div>
             ) : mode === 'single' ? (
               <>
-                <VibeLineChart data={result?.kline || []} loading={loading} modeLabel="Who Know U" />
+                <VibeLineChart data={result?.kline || []} loading={loading} loadingText={progress} modeLabel="Who Know U" />
 
                 {result && resultVisible ? (
                   <>
@@ -1231,7 +1231,7 @@ const VibeLinePage: React.FC = () => {
               </>
             ) : (
               <>
-                <VibeLineChart data={matchResult?.resonanceKline || []} loading={matchLoading} modeLabel="Who Know Us" />
+                <VibeLineChart data={matchResult?.resonanceKline || []} loading={matchLoading} loadingText={progress} modeLabel="Who Know Us" />
 
                 {matchResult && resultVisible ? (
                   <>
