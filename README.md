@@ -1,433 +1,265 @@
-<p align="center">
-  <img src="assets/logo-full.svg" alt="人生K线" width="280" />
-</p>
+# WKU soul-kline
 
-<h1 align="center">人生 K 线 | Life Destiny K-Line</h1>
+WKU soul-kline 是一个面向兴趣社交场景的 AI 连接行情 Demo。它把生日、性别、MBTI、SBTI、兴趣和真实社交样本，转译成一条可以交互查看的 `soul-kline`，帮助用户理解自己在社交平台里哪里更容易被看见、被接住、被再次想起。
 
-<p align="center">
-  <strong>将命运可视化，用 K 线读懂人生</strong>
-</p>
+项目定位是 **AI x Interest Social**：它不做命运预测，也不把用户定型，而是用多 Agent 协作生成一份可读、可解释、可继续调整的社交连接分析。
 
-<p align="center">
-  <a href="https://github.com/miounet11/life-kline/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="Apache 2.0 License" />
-  </a>
-  <a href="https://github.com/miounet11/life-kline/stargazers">
-    <img src="https://img.shields.io/github/stars/miounet11/life-kline?style=social" alt="GitHub stars" />
-  </a>
-  <a href="https://github.com/miounet11/life-kline/issues">
-    <img src="https://img.shields.io/github/issues/miounet11/life-kline" alt="GitHub issues" />
-  </a>
-  <a href="https://www.life-kline.com">
-    <img src="https://img.shields.io/badge/在线体验-life--kline.com-brightgreen" alt="在线体验" />
-  </a>
-</p>
+![WKU soul-kline 首页截图](docs/images/wku-soul-kline-home.jpg)
 
-<p align="center">
-  基于 AI 大模型 + 传统八字命理，以金融 K 线图的形式展现人生运势轨迹
-</p>
+## 功能亮点
 
-<p align="center">
-  <a href="#-在线体验">在线体验</a> •
-  <a href="#-产品理念">产品理念</a> •
-  <a href="#-功能特点">功能特点</a> •
-  <a href="#-快速开始">快速开始</a> •
-  <a href="#-项目架构">项目架构</a> •
-  <a href="#-贡献指南">贡献</a>
-</p>
+- **Who Know U**：单人连接分析，生成个人 soul-kline、社交表达建议、同频人群线索和安全边界提醒。
+- **Who Know Us**：双人共振分析，生成两个人的共振 K 线、共同点、错频风险、聊天桥接话题和靠近建议。
+- **多 Agent 协作**：画像建模、共鸣信号、soul-kline 生成、同频人群、表达方案、安全边界六个 Agent 并行工作。
+- **流式生成体验**：后端通过 SSE 持续推送 Agent 状态、预览结果和最终结果，前端实时更新工作台。
+- **可交互读盘**：鼠标 hover 查看节点详情，点击节点锁定或取消锁定读盘卡片。
+- **OpenAI-compatible 接入**：支持 OpenAI、DeepSeek、Gemini 兼容接口等，只要服务提供 `/chat/completions` 兼容格式即可接入。
 
----
+## 技术栈
 
-## 🌐 在线体验
+- **前端**：React 19、TypeScript、Vite、React Router、GSAP、Lucide React
+- **后端**：Node.js、Express、Server-Sent Events
+- **构建**：Vite build、Rollup chunk split、Tailwind CSS
+- **部署方式**：单 Node 服务同时托管 API 和 `dist` 静态文件
 
-<p align="center">
-  <a href="https://www.life-kline.com">
-    <img src="https://img.shields.io/badge/立即体验-life--kline.com-blue?style=for-the-badge&logo=google-chrome&logoColor=white" alt="在线体验" />
-  </a>
-</p>
+## 快速开始
 
-**无需注册，无需配置，打开即用：**
-
-### 👉 [https://www.life-kline.com](https://www.life-kline.com)
-
-> 本开源项目是 life-kline.com 的完整源码，你可以直接在线体验所有功能，也可以 fork 本项目进行二次开发。
-
----
-
-## 📸 产品预览
-
-<table>
-  <tr>
-    <td><img src="assets/screenshot-home.jpg" alt="首页 - 八字排盘" /></td>
-    <td><img src="assets/screenshot-kline.jpg" alt="人生K线图" /></td>
-  </tr>
-  <tr>
-    <td align="center"><em>首页 - 智能八字排盘</em></td>
-    <td align="center"><em>人生流年大运 K 线走势图</em></td>
-  </tr>
-  <tr>
-    <td><img src="assets/screenshot-analysis.jpg" alt="命理分析报告" /></td>
-    <td><img src="assets/screenshot-dashboard.jpg" alt="仪表盘" /></td>
-  </tr>
-  <tr>
-    <td align="center"><em>AI 深度命理分析报告</em></td>
-    <td align="center"><em>个人仪表盘 - 今日运势</em></td>
-  </tr>
-  <tr>
-    <td><img src="assets/screenshot-cases.jpg" alt="命运案例库" /></td>
-    <td><img src="assets/screenshot-knowledge.jpg" alt="知识殿堂" /></td>
-  </tr>
-  <tr>
-    <td align="center"><em>命运案例库 - 名人命盘</em></td>
-    <td align="center"><em>知识殿堂 - 命理学习</em></td>
-  </tr>
-</table>
-
----
-
-## 💡 产品理念
-
-> **"像看股票一样看人生"**
-
-我们将传统命理学与现代数据可视化相结合，创造了一种全新的人生运势解读方式：
-
-| 传统命理 | 人生 K 线 |
-|---------|----------|
-| 晦涩难懂的术语 | 直观的图表展示 |
-| 主观的文字描述 | 量化的运势评分 |
-| 单一维度分析 | 多维度综合评估 |
-| 依赖人工解读 | AI 智能深度分析 |
-
-**核心价值：**
-- **降低门槛** - 无需懂命理，看图即懂运势
-- **数据驱动** - 将抽象运势转化为可视化数据
-- **AI 赋能** - 大模型深度分析，专业级解读
-- **古今融合** - 传统智慧与现代技术的完美结合
-
----
-
-## ✨ 功能特点
-
-### 智能八字排盘
-- 输入出生时间地点，自动精准排盘
-- 真太阳时自动修正（基于经度计算）
-- 大运流年自动推算
-- 基于 `lunar-javascript` 精确计算
-
-### K 线可视化
-- 1-100 岁人生运势 K 线图
-- 大运、流年双轨展示
-- 类似股票的 OHLC 图表
-- 人生"牛市""熊市"一目了然
-
-### AI 深度分析
-- 性格特质与天赋分析
-- 事业财运发展趋势
-- 婚姻感情运势预测
-- 健康风险提示
-- 发展方位风水建议
-
-### Web3 特供
-- 加密货币交易运势
-- 暴富流年预测
-- 交易风格建议
-- 行业适配分析
-
-### 名人案例库
-- 收录知名人士的人生 K 线
-- 对比学习，找到相似命盘
-- 了解不同命运的实际走势
-
-### 隐私与安全
-- 支持本地部署，数据自主可控
-- 无需上传敏感信息到第三方
-- 开源代码可审计
-
----
-
-## 🚀 快速开始
-
-### 两种使用模式
-
-#### 模式一：云服务模式（推荐）
-
-**无需任何配置，直接使用官方服务：**
-
-👉 访问 [https://www.life-kline.com](https://www.life-kline.com)
-
-- **优点**：零配置，即开即用，无需维护
-- **适合人群**：普通用户，快速体验者
-
----
-
-#### 模式二：自托管模式
-
-**使用自己的 AI API，完全掌控数据和成本：**
-
-##### 环境要求
-- Node.js 18+
-- npm / pnpm / yarn
-
-##### 安装步骤
+### 1. 安装依赖
 
 ```bash
-# 1. 克隆项目
-git clone https://github.com/miounet11/life-kline.git
-cd life-kline
-
-# 2. 安装依赖
 npm install
+```
 
-# 3. 配置环境变量
+### 2. 配置环境变量
+
+复制示例文件：
+
+```bash
 cp .env.example .env
+```
 
-# 编辑 .env 文件，配置你的 API
-# API_BASE_URL=https://api.openai.com/v1
-# API_KEY=sk-your-api-key-here
-# DEFAULT_MODEL=gpt-4
+填写自己的模型服务配置：
 
-# 4. 启动服务（前后端同时启动）
+```bash
+API_BASE_URL=https://api.openai.com/v1
+API_KEY=your-api-key
+DEFAULT_MODEL=gpt-4.1-mini
+PORT=3000
+```
+
+如果使用 DeepSeek 或其它 OpenAI-compatible 服务，把 `API_BASE_URL` 和 `DEFAULT_MODEL` 改成对应服务提供的地址和模型名。
+
+> 注意：不要把 `.env` 上传到 GitHub。仓库已经通过 `.gitignore` 忽略 `.env`、`server/.env`、`node_modules` 和 `dist`。
+
+### 3. 本地开发
+
+```bash
 npm run dev
 ```
 
-访问 http://localhost:5173 开始使用。
+默认地址：
 
-##### 环境变量配置
+- 前端：`http://localhost:5173`
+- 后端：`http://localhost:3000`
+- 健康检查：`http://localhost:3000/api/health`
+
+`vite.config.ts` 已经配置了 `/api` 代理，所以开发环境下前端可以直接请求 `/api/vibeline/analyze` 和 `/api/vibeline/match`。
+
+## 常用命令
 
 ```bash
-# API 配置（必填）
-API_BASE_URL=https://api.openai.com/v1  # API 服务地址
-API_KEY=sk-xxx                           # 你的 API Key
-DEFAULT_MODEL=gpt-4                      # 默认模型
+# 启动前后端开发服务
+npm run dev
 
-# 站点配置（自定义你的品牌）
-SITE_NAME=我的命理网                      # 站点名称
-SITE_DOMAIN=mydomain.com                 # 你的域名
-SITE_URL=https://mydomain.com            # 完整URL
+# 只启动前端
+npm run dev:client
 
-# 服务器配置
-PORT=3000                                # 后端端口
-JWT_SECRET=random-32-char-string         # JWT 密钥
+# 只启动后端
+npm run dev:server
 
-# 积分系统配置（可自定义）
-FREE_INIT_POINTS=1000                    # 新用户初始积分
-COST_PER_ANALYSIS=50                     # 每次分析消耗积分
+# 生成生产构建
+npm run build
 
-# 管理员配置
-ADMIN_VOUCHER_PASSWORD=secure-password   # 兑换券管理密码
+# 本地预览前端构建产物
+npm run preview
 
-# 邮件配置（可选）
-# MAIL_SMTP_HOST=smtp.example.com
-# MAIL_SMTP_PORT=587
-# MAIL_FROM=noreply@example.com
-# MAIL_PASSWORD=your-password
+# 生产模式启动 Express 服务
+npm run start
 ```
 
-##### 支持的 AI 模型
+## 接口说明
 
-本项目兼容任何 OpenAI API 格式的服务：
+### `GET /api/health`
 
-- OpenAI GPT-4 / GPT-4o / GPT-3.5
-- Anthropic Claude (通过兼容接口)
-- Google Gemini (通过兼容接口)
-- 国内各类中转 API（如 Cloudflare AI Gateway）
-- 本地模型（如 LM Studio、Ollama 等）
+服务健康检查。
 
----
-
-### 💰 定价系统自定义
-
-自托管模式下，你可以完全自定义积分和定价规则：
-
-1. **修改初始积分**：编辑 `.env` 中的 `FREE_INIT_POINTS`
-2. **调整消费规则**：编辑 `.env` 中的 `COST_PER_ANALYSIS`
-3. **发放兑换券**：使用管理员密码生成兑换码
-
-**示例场景：**
-- **企业内部使用**：设置超高初始积分，或取消积分限制
-- **教育机构**：为学生批量发放兑换券
-- **付费服务**：对接支付网关，实现积分充值
-
----
-
-## 🏗️ 项目架构
-
-### 技术栈
-
-| 层级 | 技术 | 说明 |
-|-----|------|------|
-| **前端框架** | React 19 + Vite | 最新 React，极速 HMR |
-| **UI 样式** | TailwindCSS | 原子化 CSS，高效开发 |
-| **图表** | Recharts | 专业金融图表库 |
-| **动画** | Framer Motion | 流畅交互动效 |
-| **路由** | React Router 7 | 声明式路由 |
-| **后端** | Express.js | 轻量高效 |
-| **数据库** | SQLite (better-sqlite3) | 零配置，本地优先 |
-| **认证** | JWT + bcrypt | 安全可靠 |
-| **八字算法** | lunar-javascript | 精确农历/干支计算 |
-| **AI 接口** | OpenAI 兼容 | 支持多种大模型 |
-
-### 目录结构
-
-```
-life-kline/
-├── 📱 前端 (React 19 + Vite)
-│   ├── pages/                    # 页面组件
-│   │   ├── HomePage.tsx          # 首页 - K线生成
-│   │   ├── DashboardPage.tsx     # 仪表盘
-│   │   ├── DailyFortunePage.tsx  # 每日运势
-│   │   ├── CasesLibrary.tsx      # 名人案例库
-│   │   ├── KnowledgeHub.tsx      # 知识中心
-│   │   └── ProfilePage.tsx       # 个人档案
-│   │
-│   ├── components/               # 可复用组件
-│   │   ├── layout/               # 布局组件
-│   │   ├── chart/                # 图表组件
-│   │   ├── fortune/              # 运势组件
-│   │   ├── celebrity/            # 名人案例组件
-│   │   ├── profile/              # 档案管理组件
-│   │   └── share/                # 分享海报组件
-│   │
-│   ├── services/                 # 前端服务
-│   │   ├── fortuneCalculator.ts  # 运势计算引擎
-│   │   ├── baziSimilarityService.ts # 八字相似度计算
-│   │   └── calendarExport.ts     # 日历导出
-│   │
-│   └── contexts/                 # React Context
-│
-├── 🖥️ 后端 (Node.js + Express)
-│   └── server/
-│       ├── index.js              # 主入口 & API 路由
-│       ├── database.js           # SQLite 数据库
-│       ├── auth.js               # JWT 认证
-│       ├── baziCalculator.js     # 八字计算核心
-│       ├── unifiedAnalyzer.js    # 统一 AI 分析引擎
-│       ├── agentPrompts.js       # AI Agent 提示词库
-│       ├── emailService.js       # 邮件服务
-│       ├── pointsManager.js      # 积分管理
-│       └── cacheManager.js       # 缓存管理
-│
-└── 📜 脚本 (scripts/)
-    ├── seed-knowledge.js         # 知识内容种子数据
-    └── seed-cases.js             # 名人案例种子数据
+```bash
+curl http://localhost:3000/api/health
 ```
 
-### 核心工作流程
+### `POST /api/vibeline/analyze`
 
+生成单人 Who Know U 分析。接口返回 SSE 流，前端会按事件类型实时更新 Agent 状态和结果。
+
+主要事件：
+
+- `progress`：阶段性进度文本
+- `vibeline_preview`：兜底预览结果
+- `agent_update`：单个 Agent 的运行状态
+- `complete`：最终完整结果
+- `error`：错误信息
+
+### `POST /api/vibeline/match`
+
+生成双人 Who Know Us 共振分析。返回格式同样是 SSE 流。
+
+## 目录结构
+
+```text
+App.tsx                         # 应用路由入口
+pages/VibeLinePage.tsx          # WKU soul-kline 主页面
+components/VibeLineChart.tsx    # 可交互 soul-kline 曲线
+services/vibelineService.ts     # 前端 SSE 调用封装
+types/vibeline.ts               # 前后端共享的前端类型
+
+server/index.js                 # Express 入口，同时托管 API 和 dist
+server/modelConfig.js           # OpenAI-compatible 模型配置
+server/vibelineAnalyzer.js      # Who Know U 多 Agent 分析
+server/vibelineMatchAnalyzer.js # Who Know Us 多 Agent 分析
+server/vibelinePrompts.js       # soul-kline Agent 提示词
+server/vibelineEngine.js        # 输入清洗、兜底结构与结果合并
+
+docs/images/                    # README 和文档截图
+tests/                          # 核心逻辑测试
 ```
-用户输入出生信息
-       ↓
-┌──────────────────┐
-│  智能八字排盘    │  ← lunar-javascript 精确计算
-│  (真太阳时修正)  │
-└────────┬─────────┘
-         ↓
-┌──────────────────┐
-│  AI 统一分析引擎 │  ← 大模型 (GPT/Claude/Gemini)
-│  • 核心命理      │
-│  • 事业财富      │
-│  • 婚姻健康      │
-│  • 历史K线       │
-│  • 未来预测      │
-│  • Web3运势      │
-└────────┬─────────┘
-         ↓
-┌──────────────────┐
-│   K线图 + 报告   │  ← Recharts 可视化
-│   + 分享海报     │
-└──────────────────┘
+
+## 生产部署
+
+这个项目生产环境只需要一个 Node 服务：先构建前端到 `dist`，再由 `server/index.js` 托管静态文件和 API。
+
+### 方式一：服务器手动部署
+
+适合阿里云 ECS、轻量应用服务器、腾讯云 CVM、普通 VPS。
+
+```bash
+git clone https://github.com/gaweek/wku-soul-kline.git
+cd wku-soul-kline
+
+npm ci
+cp .env.example .env
+nano .env
+
+npm run build
+NODE_ENV=production PORT=3000 npm run start
 ```
 
----
+推荐用 PM2 常驻运行：
 
-## 📚 文档
+```bash
+npm install -g pm2
+pm2 start "npm run start" --name wku-soul-kline
+pm2 save
+pm2 startup
+```
 
-- [贡献指南](CONTRIBUTING.md)
-- [行为准则](CODE_OF_CONDUCT.md)
-- [安全政策](SECURITY.md)
-- [架构文档](docs/ARCHITECTURE-SIMPLIFICATION.md)
-- [API 文档](docs/API-UNIFIED-ANALYZER.md)
+### Nginx 反向代理示例
 
----
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
 
-## 🤝 贡献指南
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 
-我们欢迎所有形式的贡献！无论是报告 bug、提出新功能建议，还是提交代码改进。
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 75s;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
 
-### 如何贡献
+`/api/` 使用 SSE 流式返回，Nginx 里需要关闭 buffering，否则前端可能无法实时看到 Agent 进度。
 
-1. Fork 本仓库
-2. 创建你的特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交你的修改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启一个 Pull Request
+### 方式二：PaaS 部署
 
-详细信息请查看 [CONTRIBUTING.md](CONTRIBUTING.md)
+适合 Render、Railway、Fly.io 等平台。
 
----
+```text
+Build command: npm ci && npm run build
+Start command: npm run start
+Node version: 20 或 22
+Environment: API_BASE_URL, API_KEY, DEFAULT_MODEL, PORT
+```
 
-## 🐛 问题反馈
+## 阿里云部署建议
 
-如果你发现了 bug 或有功能建议：
+最低可用配置：
 
-1. 先在 [Issues](https://github.com/miounet11/life-kline/issues) 中搜索是否已有相关问题
-2. 如果没有，请创建新的 Issue，并详细描述问题或建议
-3. 对于安全问题，请查看 [SECURITY.md](SECURITY.md) 了解如何私密报告
+```text
+系统：Ubuntu 22.04 / 24.04
+规格：2 核 2G 起步，2 核 4G 更稳
+磁盘：40GB
+安全组：开放 22、80、443
+运行方式：Node.js + PM2 + Nginx
+```
 
----
+部署顺序：
 
-## 📄 开源协议
+1. 创建 ECS 或轻量应用服务器。
+2. 安装 `git`、`nodejs`、`npm`、`nginx`。
+3. 从 GitHub 拉取项目。
+4. 在服务器创建 `.env` 并填写真实 `API_KEY`。
+5. 执行 `npm ci && npm run build`。
+6. 使用 PM2 启动 `npm run start`。
+7. 使用 Nginx 反向代理到 `127.0.0.1:3000`。
+8. 绑定域名后配置 HTTPS。
 
-本项目采用 [Apache License 2.0](LICENSE) 协议开源。
+如果服务器地域在中国内地，域名正式访问通常需要完成 ICP 备案。没有备案前可以先用公网 IP 测试。
 
-**这意味着你可以：**
-- 自由使用、修改、分发本软件
-- 用于商业目的
-- 修改并闭源（但需保留版权声明）
+## 更新线上版本
 
-**前提是：**
-- 保留原作者的版权声明
-- 说明你做了哪些修改
-- 提供 Apache 2.0 协议的副本
+完整迭代流程见：[docs/ITERATION-WORKFLOW.md](docs/ITERATION-WORKFLOW.md)。
 
----
+本地提交并推送：
 
-## 🙏 致谢
+```bash
+git add .
+git commit -m "Update WKU soul-kline"
+git push
+```
 
-感谢以下开源项目：
+服务器更新：
 
-- [lunar-javascript](https://github.com/6tail/lunar-javascript) - 精确的农历和八字计算库
-- [React](https://react.dev/) - 构建用户界面的 JavaScript 库
-- [Recharts](https://recharts.org/) - 专业的 React 图表库
-- [TailwindCSS](https://tailwindcss.com/) - 现代化的 CSS 框架
-- [Vite](https://vitejs.dev/) - 下一代前端构建工具
+```bash
+cd /var/www/wku-soul-kline
+git pull
+npm ci
+npm run build
+pm2 restart wku-soul-kline
+```
 
-以及所有贡献者的支持！
+## 安全注意事项
 
----
+- 不要提交 `.env`、API Key、私钥、证书文件。
+- 生产环境建议只在内网监听 Node 服务，通过 Nginx 暴露 `80/443`。
+- 模型接口调用失败时，项目会返回兜底结构，方便前端保持可用体验。
+- 如果把仓库改为 public，先重新检查历史提交里是否出现过密钥。
 
-## ⚠️ 免责声明
+## License
 
-本项目仅供娱乐与文化研究，命运掌握在自己手中，请理性看待分析结果。
-
-**特别提示：**
-- 本软件不提供任何形式的人生建议或决策依据
-- AI 分析结果仅供参考，不构成专业咨询
-- 请勿过度依赖算命结果做出重大人生决定
-- 投资有风险，Web3 运势分析不构成投资建议
-
----
-
-<p align="center">
-  <strong>⭐ 如果觉得有趣，欢迎 Star 支持！</strong>
-</p>
-
-<p align="center">
-  Made with ❤️ by the Life-Kline Team
-</p>
-
-<p align="center">
-  <a href="https://www.life-kline.com">官网</a> •
-  <a href="https://github.com/miounet11/life-kline">GitHub</a> •
-  <a href="https://github.com/miounet11/life-kline/issues">问题反馈</a>
-</p>
+Apache-2.0

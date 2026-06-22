@@ -27,9 +27,8 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks: {
-            'lunar': ['lunar-javascript'],
-            'recharts': ['recharts'],
             'lucide': ['lucide-react'],
+            'motion': ['gsap', '@gsap/react'],
             'react-vendor': ['react', 'react-dom']
           }
         }
