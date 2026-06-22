@@ -38,6 +38,32 @@ export const createInitialVibeLineAgentStatuses = (): VibeLineAgentStatusMap => 
   safety_authenticity: { status: 'pending', name: VIBELINE_AGENT_NAMES.safety_authenticity },
 });
 
+export const formatVibeLineErrorMessage = (
+  rawMessage = '',
+  mode: 'single' | 'match' = 'single'
+) => {
+  const message = String(rawMessage || '');
+  const productName = mode === 'match' ? 'Who Know Us' : 'WKU soul-kline';
+
+  if (/TIMEOUT|超时|Gateway Timeout|连接意外中断/i.test(message)) {
+    return '生成响应超时，可能是当前访问较频繁或模型生成耗时较长，请稍后重试。';
+  }
+
+  if (/HTTP 429|429|rate limit|too many requests|访问频繁|请求过多/i.test(message)) {
+    return '当前访问人数较多，服务器处理较繁忙，请稍后重试。';
+  }
+
+  if (/HTTP 5\d\d|Bad Gateway|Service Unavailable|server error|服务器/i.test(message)) {
+    return '服务器暂时繁忙，读盘没有生成完成，请稍后重试。';
+  }
+
+  if (/EMPTY_RESPONSE|Unexpected end of JSON input|JSON|输出不完整|真实 Agent 未全部完成|lifecycle_kline/i.test(message)) {
+    return `${productName} 读盘没有完整返回，可能是当前请求较多或模型响应中断，请稍后重试。`;
+  }
+
+  return message || `${productName} 生成失败，请稍后重试。`;
+};
+
 export const analyzeVibeLine = async (
   input: VibeLineInput,
   callbacks: AnalyzeCallbacks = {}
@@ -50,7 +76,7 @@ export const analyzeVibeLine = async (
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.message || payload.error || 'WKU soul-kline生成失败');
+    throw new Error(formatVibeLineErrorMessage(payload.message || payload.error || 'WKU soul-kline生成失败'));
   }
 
   const reader = response.body?.getReader();
@@ -101,7 +127,7 @@ export const analyzeVibeLine = async (
       }
 
       if (event === 'error') {
-        throw new Error(data.message || data.error || 'WKU soul-kline生成失败');
+        throw new Error(formatVibeLineErrorMessage(data.message || data.error || 'WKU soul-kline生成失败'));
       }
     }
   }
@@ -121,7 +147,7 @@ export const analyzeVibeMatch = async (
 
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.message || payload.error || 'Who Know Us 生成失败');
+    throw new Error(formatVibeLineErrorMessage(payload.message || payload.error || 'Who Know Us 生成失败', 'match'));
   }
 
   const reader = response.body?.getReader();
@@ -172,7 +198,7 @@ export const analyzeVibeMatch = async (
       }
 
       if (event === 'error') {
-        throw new Error(data.message || data.error || 'Who Know Us 生成失败');
+        throw new Error(formatVibeLineErrorMessage(data.message || data.error || 'Who Know Us 生成失败', 'match'));
       }
     }
   }

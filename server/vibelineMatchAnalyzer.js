@@ -13,6 +13,14 @@ const DEFAULT_MODEL = getProviderDefaultModel(
   process.env.DEFAULT_MODEL,
   'gemini-3-pro-preview'
 );
+const MATCH_AGENT_TIMEOUTS = {
+  persona_asset: 55000,
+  resonance_factor: 60000,
+  lifecycle_kline: 90000,
+  audience_market: 50000,
+  narrative_packaging: 65000,
+  safety_authenticity: 45000,
+};
 
 const clamp = (value, min = 0, max = 100) => Math.max(min, Math.min(max, value));
 
@@ -24,6 +32,27 @@ const sendSSE = (res, event, data) => {
 };
 
 const formatElapsed = (startedAt) => `${((Date.now() - startedAt) / 1000).toFixed(1)}s`;
+
+const getMatchAgentTimeoutMs = (agentType, attempt = 1) => {
+  const baseTimeout = MATCH_AGENT_TIMEOUTS[agentType] || 55000;
+  return attempt > 1 ? baseTimeout + 30000 : baseTimeout;
+};
+
+const getMatchAgentGenerationConfig = (agentType) => ({
+  temperature: agentType === 'lifecycle_kline' ? 0.35 : 0.55,
+  max_tokens: agentType === 'lifecycle_kline' ? 5200 : 2600,
+});
+
+const isRetryableAgentError = (error = '') => (
+  /TIMEOUT|EMPTY_RESPONSE|Unexpected end of JSON input|unterminated|JSON|HTTP 429|HTTP 500|HTTP 502|HTTP 503|HTTP 504/i
+    .test(String(error || ''))
+);
+
+const formatFailedAgent = (item = {}) => {
+  const agentType = item.agentType || 'unknown_agent';
+  const error = item.error || item.reason?.message || 'UNKNOWN';
+  return `${agentType}(${error})`;
+};
 
 const parseJsonObject = (content = '') => {
   let clean = String(content || '').trim();
@@ -48,7 +77,7 @@ const normalizeMatchInput = (raw = {}) => ({
   relationshipGoal: String(raw.relationshipGoal || raw.goal || '想知道两个人如何自然靠近').trim(),
 });
 
-const requestAgent = async (agent, input, partialState, timeoutMs = 45000) => {
+const requestAgent = async (agent, input, partialState, timeoutMs = getMatchAgentTimeoutMs(agent.type)) => {
   if (!DEFAULT_API_KEY) {
     return { success: false, agentType: agent.type, error: 'MISSING_API_KEY' };
   }
@@ -71,7 +100,7 @@ const requestAgent = async (agent, input, partialState, timeoutMs = 45000) => {
           { role: 'system', content: agent.systemPrompt },
           { role: 'user', content: buildVibeMatchUserPrompt(input, partialState) },
         ],
-        temperature: 0.55,
+        ...getMatchAgentGenerationConfig(agent.type),
       }),
     });
 
@@ -109,6 +138,29 @@ const requestAgent = async (agent, input, partialState, timeoutMs = 45000) => {
   } finally {
     clearTimeout(timeoutId);
   }
+};
+
+const requestAgentWithRetry = async (agent, input, partialState, onRetry) => {
+  const firstResult = await requestAgent(agent, input, partialState, getMatchAgentTimeoutMs(agent.type, 1));
+
+  if (firstResult.success || !isRetryableAgentError(firstResult.error)) {
+    return firstResult;
+  }
+
+  onRetry?.(firstResult);
+  const retryResult = await requestAgent(agent, input, partialState, getMatchAgentTimeoutMs(agent.type, 2));
+
+  if (retryResult.success) {
+    return {
+      ...retryResult,
+      retryOf: firstResult.error,
+    };
+  }
+
+  return {
+    ...retryResult,
+    error: `${retryResult.error || 'UNKNOWN'}；重试前：${firstResult.error || 'UNKNOWN'}`,
+  };
 };
 
 const requireArray = (value, label, minLength = 1) => {
@@ -289,7 +341,18 @@ export const handleVibeMatchAnalyze = async (req, res) => {
         status: 'running',
       });
 
-      return requestAgent(agent, input, agentResults).then((result) => {
+      return requestAgentWithRetry(agent, input, agentResults, (failedAttempt) => {
+        sendSSE(res, 'agent_update', {
+          agentType: agent.type,
+          name: agent.name,
+          status: 'running',
+          error: failedAttempt.error,
+        });
+        sendSSE(res, 'progress', {
+          message: `${agent.name} 响应不完整，正在重试...`,
+          phase: `${agent.type}_retry`,
+        });
+      }).then((result) => {
         if (result.success) {
           agentResults[agent.type] = result.data;
           completedAgents.push(agent.type);
@@ -299,6 +362,7 @@ export const handleVibeMatchAnalyze = async (req, res) => {
             status: 'completed',
             elapsed: result.elapsed,
             model: result.model,
+            retryOf: result.retryOf,
           });
           sendSSE(res, 'progress', {
             message: `✓ ${agent.name} 已完成，正在继续合并共振证据...`,
@@ -322,7 +386,7 @@ export const handleVibeMatchAnalyze = async (req, res) => {
       .filter((item) => !item.success);
 
     if (failed.length > 0) {
-      throw new Error(`Who Know Us 真实 Agent 未全部完成：${failed.map((item) => item.agentType || item.error).join('、')}`);
+      throw new Error(`Who Know Us 真实 Agent 未全部完成：${failed.map(formatFailedAgent).join('、')}`);
     }
 
     sendSSE(res, 'progress', {
