@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import * as engine from '../server/vibelineEngine.js';
 import {
   buildFallbackVibeMatchResult,
   buildFallbackVibeLineResult,
@@ -11,6 +12,16 @@ import {
 const sensitiveChartTerm = '\u516b\u5b57';
 const sensitiveTrendTerm = '\u8fd0\u52bf';
 const sensitiveSystemTerm = '\u547d\u7406';
+const pairRoleLeakPattern = /(?:A\/B|A 的|A的|B 的|B的|让 A|让A|B 接|B接|A 未|B 未)/;
+
+const collectStringValues = (value) => {
+  if (typeof value === 'string') return [value];
+  if (Array.isArray(value)) return value.flatMap(collectStringValues);
+  if (value && typeof value === 'object') {
+    return Object.values(value).flatMap(collectStringValues);
+  }
+  return [];
+};
 
 test('sanitizeVibeInput removes metaphysics terms and preserves user intent', () => {
   const input = sanitizeVibeInput({
@@ -160,4 +171,49 @@ test('buildFallbackVibeMatchResult creates a two-person resonance report', () =>
   assert.equal(result.mismatchRisks.length >= 2, true);
   assert.equal(result.conversationBridges.length >= 3, true);
   assert.equal(result.matchScore >= 0 && result.matchScore <= 100, true);
+});
+
+test('buildFallbackVibeMatchResult uses you and Ta instead of visible A/B labels', () => {
+  const result = buildFallbackVibeMatchResult({
+    personA: {
+      draft: '我慢热，喜欢独立音乐和电影，想认识能慢慢聊起来的人。',
+      interests: ['独立音乐', '电影'],
+      socialProblem: '第一句话容易紧张',
+    },
+    personB: {
+      draft: '我喜欢看展和摄影，聊天节奏比较温和。',
+      interests: ['看展', '摄影'],
+      socialProblem: '怕对方觉得我太主动',
+    },
+    relationshipGoal: '想知道适不适合慢慢深聊',
+  });
+
+  const visibleCopy = collectStringValues({
+    summary: result.summary,
+    resonanceKline: result.resonanceKline,
+    overlapSignals: result.overlapSignals,
+    mismatchRisks: result.mismatchRisks,
+    stageAdvice: result.stageAdvice,
+    conversationBridges: result.conversationBridges,
+    safety: result.safety,
+  }).join('\n');
+
+  assert.doesNotMatch(visibleCopy, pairRoleLeakPattern);
+  assert.match(visibleCopy, /你/);
+  assert.match(visibleCopy, /Ta/);
+});
+
+test('normalizePairPerspectiveCopy rewrites model A/B labels in visible text', () => {
+  assert.equal(typeof engine.normalizePairPerspectiveCopy, 'function');
+
+  const normalized = engine.normalizePairPerspectiveCopy({
+    reason: 'A 的第一句话冷淡，B怕别人接不住，基于 A/B 输入的评分依据。',
+    suggestion: '让 A 分享一个兴趣瞬间，B 接一个生活片段。',
+    nested: ['A未填写具体困扰 / B 未填写具体困扰'],
+  });
+  const visibleCopy = collectStringValues(normalized).join('\n');
+
+  assert.doesNotMatch(visibleCopy, pairRoleLeakPattern);
+  assert.match(visibleCopy, /你的第一句话/);
+  assert.match(visibleCopy, /Ta/);
 });

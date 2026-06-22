@@ -49,6 +49,16 @@ test('Who Know Us agent definitions cover the full resonance workflow', () => {
   ]);
 });
 
+test('Who Know Us prompts ask agents to use you and Ta in visible copy', () => {
+  const forbiddenVisibleLabels = /(?:A\/B 输入|A 的|B 的|基于 A\/B|分别引用 A 和 B)/;
+
+  for (const agent of VIBEMATCH_AGENT_DEFINITIONS) {
+    assert.equal(forbiddenVisibleLabels.test(agent.systemPrompt), false, agent.type);
+    assert.equal(agent.systemPrompt.includes('你'), true, agent.type);
+    assert.equal(agent.systemPrompt.includes('Ta'), true, agent.type);
+  }
+});
+
 test('Who Know Us analyzer does not complete from fallback builder', () => {
   const source = readFileSync(new URL('../server/vibelineMatchAnalyzer.js', import.meta.url), 'utf8');
 

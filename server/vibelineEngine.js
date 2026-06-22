@@ -72,6 +72,60 @@ const stripSensitiveTerms = (text = '') => {
   return cleaned.replace(/\s+/g, ' ').trim();
 };
 
+const normalizePairPerspectiveString = (text = '') => {
+  return String(text || '')
+    .replace(/A\/B\s*输入/g, '你和 Ta 的输入')
+    .replace(/基于\s*A\/B/g, '基于你和 Ta')
+    .replace(/A\/B/g, '你/Ta')
+    .replace(/A\s*的/g, '你的')
+    .replace(/B\s*的/g, 'Ta 的')
+    .replace(/让\s*A/g, '让你')
+    .replace(/B\s*接/g, 'Ta 接')
+    .replace(/A\s*未/g, '你未')
+    .replace(/B\s*未/g, 'Ta 未')
+    .replace(/A(?=[\u4e00-\u9fff])/g, '你')
+    .replace(/B(?=[\u4e00-\u9fff])/g, 'Ta ');
+};
+
+export const normalizePairPerspectiveCopy = (value) => {
+  if (typeof value === 'string') return normalizePairPerspectiveString(value);
+  if (Array.isArray(value)) return value.map((item) => normalizePairPerspectiveCopy(item));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, normalizePairPerspectiveCopy(item)])
+    );
+  }
+  return value;
+};
+
+export const normalizeVibeMatchVisibleCopy = (result = {}) => ({
+  ...result,
+  personA: result.personA
+    ? {
+        ...result.personA,
+        marketType: normalizePairPerspectiveCopy(result.personA.marketType),
+        summary: normalizePairPerspectiveCopy(result.personA.summary),
+        safety: normalizePairPerspectiveCopy(result.personA.safety),
+      }
+    : result.personA,
+  personB: result.personB
+    ? {
+        ...result.personB,
+        marketType: normalizePairPerspectiveCopy(result.personB.marketType),
+        summary: normalizePairPerspectiveCopy(result.personB.summary),
+        safety: normalizePairPerspectiveCopy(result.personB.safety),
+      }
+    : result.personB,
+  marketType: normalizePairPerspectiveCopy(result.marketType),
+  summary: normalizePairPerspectiveCopy(result.summary),
+  resonanceKline: normalizePairPerspectiveCopy(result.resonanceKline),
+  overlapSignals: normalizePairPerspectiveCopy(result.overlapSignals),
+  mismatchRisks: normalizePairPerspectiveCopy(result.mismatchRisks),
+  stageAdvice: normalizePairPerspectiveCopy(result.stageAdvice),
+  conversationBridges: normalizePairPerspectiveCopy(result.conversationBridges),
+  safety: normalizePairPerspectiveCopy(result.safety),
+});
+
 const containsSensitiveTerm = (text = '') => {
   return FORBIDDEN_PATTERNS.some((pattern) => {
     pattern.lastIndex = 0;
@@ -531,7 +585,7 @@ const buildPairRisks = (personA, personB) => [
   {
     title: '主动节奏可能错频',
     risk: /主动|第一句|第一句话|紧张|不知道|怕/.test(`${personA.socialProblem} ${personB.socialProblem}`) ? 16 : 10,
-    evidence: `${personA.socialProblem || 'A 未填写具体困扰'} / ${personB.socialProblem || 'B 未填写具体困扰'}`,
+    evidence: `${personA.socialProblem || '你未填写具体困扰'} / ${personB.socialProblem || 'Ta 未填写具体困扰'}`,
     suggestion: '不要一开始就追问关系结论，先用低压力话题把第一句话成本降下来。',
   },
   {
@@ -634,7 +688,7 @@ const buildResonanceKLine = (personAResult, personBResult, sharedInterests) => {
       close,
       risk,
       volume,
-      reason: `${matchNode.stage}/${matchNode.label}：A 的连接分 ${pointA.close}，B 的连接分 ${pointB.close}。${sharedInterests.length > 0 ? `共同兴趣 ${sharedInterests.join('、')} 会提高话题流动性。` : '双方兴趣互补，但需要更明确的桥梁话题。'}`,
+      reason: `${matchNode.stage}/${matchNode.label}：你的连接分 ${pointA.close}，Ta 的连接分 ${pointB.close}。${sharedInterests.length > 0 ? `共同兴趣 ${sharedInterests.join('、')} 会提高话题流动性。` : '双方兴趣互补，但需要更明确的桥梁话题。'}`,
     });
   });
 };
@@ -660,8 +714,8 @@ const getStageAdviceCopy = ({
 }) => {
   const topic = getPairTopic(personA, personB, sharedInterests);
   const hasSharedInterest = sharedInterests.length > 0;
-  const aProblem = personA.socialProblem || 'A 的第一句话压力';
-  const bProblem = personB.socialProblem || 'B 的表达顾虑';
+  const aProblem = personA.socialProblem || '你的第一句话压力';
+  const bProblem = personB.socialProblem || 'Ta 的表达顾虑';
   const pressureNote = avgVolatility >= 55 ? '这一段理解成本偏高，先把表达放轻。' : '这一段理解成本可控，可以多给一点真实细节。';
 
   const copyByStage = {
@@ -685,7 +739,7 @@ const getStageAdviceCopy = ({
       risk: `${lowest.label} 如果推进太快，会把共鸣误读成必须马上升温`,
       suggestion: hasSharedInterest
         ? `共同兴趣已经出现，可以围绕${sharedInterests.slice(0, 2).join('、')}聊“为什么喜欢”，让共同标签变成共同感受。`
-        : `这里适合做兴趣交换，而不是强找共同点。让 A 分享一个${personA.interests?.[0] || '兴趣'}瞬间，B 接一个${personB.interests?.[0] || '生活片段'}瞬间。`,
+        : `这里适合做兴趣交换，而不是强找共同点。让你分享一个${personA.interests?.[0] || '兴趣'}瞬间，Ta 接一个${personB.interests?.[0] || '生活片段'}瞬间。`,
     },
     信任升温: {
       highlight: `${highest.label} 说明你们有机会把话题聊到更具体的内在原因`,
@@ -717,7 +771,7 @@ const getStageAdviceCopy = ({
       risk: `${lowest.label} 如果推进太快，会把共鸣误读成必须立刻升温`,
       suggestion: hasSharedInterest
         ? `共同兴趣已经出现，可以围绕${sharedInterests.slice(0, 2).join('、')}聊“为什么喜欢”，让共鸣从共同标签进入共同感受。`
-        : `这里适合做兴趣交换，而不是强找共同点。让 A 分享一个${personA.interests?.[0] || '兴趣'}瞬间，B 接一个${personB.interests?.[0] || '生活片段'}瞬间。`,
+        : `这里适合做兴趣交换，而不是强找共同点。让你分享一个${personA.interests?.[0] || '兴趣'}瞬间，Ta 接一个${personB.interests?.[0] || '生活片段'}瞬间。`,
     },
     慢慢深聊: {
       highlight: `${highest.label} 说明你们有机会聊到更具体的内在原因`,
@@ -796,7 +850,7 @@ export const buildFallbackVibeMatchResult = (raw = {}) => {
     relationshipGoal,
   });
 
-  return {
+  return normalizeVibeMatchVisibleCopy({
     productName: 'WKU soul-kline',
     mode: 'Who Know Us',
     tagline: 'Who Know Us? 看见两个人怎么靠近，而不是给关系下结论。',
@@ -824,7 +878,7 @@ export const buildFallbackVibeMatchResult = (raw = {}) => {
       mode: 'fallback',
       generatedAt: new Date().toISOString(),
     },
-  };
+  });
 };
 
 const normalizeKLine = (points, fallbackPoints) => {

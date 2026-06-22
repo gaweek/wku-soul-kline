@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { sanitizeVibeInput } from './vibelineEngine.js';
+import { normalizeVibeMatchVisibleCopy, sanitizeVibeInput } from './vibelineEngine.js';
 import {
   buildVibeMatchUserPrompt,
   VIBEMATCH_AGENT_DEFINITIONS,
@@ -230,7 +230,7 @@ const mergeMatchAgentResults = (input, agentResults = {}) => {
     resonanceKline.reduce((sum, point) => sum + point.close, 0) / resonanceKline.length
   )));
 
-  return {
+  return normalizeVibeMatchVisibleCopy({
     productName: 'WKU soul-kline',
     mode: 'Who Know Us',
     tagline: 'Who Know Us? 看见两个人怎么靠近，而不是给关系下结论。',
@@ -255,7 +255,7 @@ const mergeMatchAgentResults = (input, agentResults = {}) => {
       completedAgents: Object.keys(agentResults),
       generatedAt: new Date().toISOString(),
     },
-  };
+  });
 };
 
 export const handleVibeMatchAnalyze = async (req, res) => {
