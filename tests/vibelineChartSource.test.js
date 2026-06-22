@@ -75,3 +75,30 @@ test('generated results render directly without an expand gate', () => {
   assert.match(pageSource, /result \? \(/);
   assert.match(pageSource, /matchResult \? \(/);
 });
+
+test('chart pointer hit testing prioritizes the nearest stage band instead of raw diagonal distance', () => {
+  assert.match(chartSource, /getPointerPoint/);
+  assert.match(chartSource, /getNearestIndexFromPointer/);
+  assert.match(chartSource, /stageBandWidth/);
+  assert.match(chartSource, /candidateIndices/);
+  assert.match(chartSource, /Math\.abs\(point\.x - pointer\.x\)/);
+  assert.match(chartSource, /Math\.abs\(point\.y - pointer\.y\) \* 0\.24/);
+});
+
+test('chart tooltip can dock above or below the selected node to avoid covering the k-line', () => {
+  assert.match(chartSource, /TooltipPlacement = 'left' \| 'right' \| 'top' \| 'bottom'/);
+  assert.match(chartSource, /chooseTooltipPlacement/);
+  assert.match(chartSource, /avoidRect/);
+  assert.match(cssSource, /wku-point-tooltip\[data-side="top"\]/);
+  assert.match(cssSource, /wku-point-tooltip\[data-side="bottom"\]/);
+});
+
+test('chart locking only happens from explicit nodes and background clicks only unlock', () => {
+  assert.equal(chartSource.includes('toggleNearestTooltipLock'), false);
+  assert.match(chartSource, /lockTooltipAtIndex/);
+  assert.match(chartSource, /unlockTooltip/);
+  assert.match(chartSource, /onClick=\{\(\) => \{\s*if \(tooltipLocked\) unlockTooltip\(\);/);
+  assert.match(chartSource, /lockTooltipAtIndex\(index\)/);
+  assert.match(chartSource, /解除锁定/);
+  assert.match(cssSource, /wku-tooltip-close/);
+});

@@ -36,7 +36,19 @@ interface StageGroup {
   startIndex: number;
 }
 
-type TooltipPlacement = 'left' | 'right';
+interface PointerPoint {
+  x: number;
+  y: number;
+}
+
+interface TooltipBox {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+type TooltipPlacement = 'left' | 'right' | 'top' | 'bottom';
 
 const VIEWBOX_WIDTH = 1040;
 const VIEWBOX_HEIGHT = 460;
@@ -58,6 +70,86 @@ const scoreToY = (score: number) => {
 const clamp = (value: number, min: number, max: number) => {
   if (min > max) return (min + max) / 2;
   return Math.max(min, Math.min(max, value));
+};
+
+const getOverlapArea = (first: TooltipBox, second: TooltipBox) => {
+  const width = Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left));
+  const height = Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
+  return width * height;
+};
+
+const getOverflowScore = (box: TooltipBox, bounds: TooltipBox) => (
+  Math.max(0, bounds.left - box.left)
+  + Math.max(0, box.right - bounds.right)
+  + Math.max(0, bounds.top - box.top)
+  + Math.max(0, box.bottom - bounds.bottom)
+);
+
+const chooseTooltipPlacement = (
+  point: PlotPoint,
+  rect: DOMRect,
+  tooltipWidth: number,
+  tooltipHeight: number
+): TooltipPlacement => {
+  const pointX = (point.x / VIEWBOX_WIDTH) * rect.width;
+  const pointY = (point.y / VIEWBOX_HEIGHT) * rect.height;
+  const gutter = 18;
+  const avoidRect: TooltipBox = {
+    left: pointX - 54,
+    top: pointY - 42,
+    right: pointX + 54,
+    bottom: pointY + 42,
+  };
+  const bounds: TooltipBox = {
+    left: 12,
+    top: 12,
+    right: rect.width - 12,
+    bottom: rect.height - 12,
+  };
+  const boxes: Record<TooltipPlacement, TooltipBox> = {
+    top: {
+      left: pointX - tooltipWidth / 2,
+      top: pointY - tooltipHeight - gutter,
+      right: pointX + tooltipWidth / 2,
+      bottom: pointY - gutter,
+    },
+    bottom: {
+      left: pointX - tooltipWidth / 2,
+      top: pointY + gutter,
+      right: pointX + tooltipWidth / 2,
+      bottom: pointY + tooltipHeight + gutter,
+    },
+    left: {
+      left: pointX - tooltipWidth - gutter,
+      top: pointY - tooltipHeight / 2,
+      right: pointX - gutter,
+      bottom: pointY + tooltipHeight / 2,
+    },
+    right: {
+      left: pointX + gutter,
+      top: pointY - tooltipHeight / 2,
+      right: pointX + tooltipWidth + gutter,
+      bottom: pointY + tooltipHeight / 2,
+    },
+  };
+
+  return (Object.keys(boxes) as TooltipPlacement[])
+    .map((placement) => {
+      const box = boxes[placement];
+      const overflow = getOverflowScore(box, bounds);
+      const overlap = getOverlapArea(box, avoidRect);
+      const verticalDockBonus = placement === 'top' || placement === 'bottom' ? -18 : 0;
+      const sameHalfPenalty = (
+        (placement === 'top' && pointY < rect.height * 0.5)
+        || (placement === 'bottom' && pointY > rect.height * 0.5)
+      ) ? 36 : 0;
+
+      return {
+        placement,
+        score: overflow * 6 + overlap * 0.02 + sameHalfPenalty + verticalDockBonus,
+      };
+    })
+    .sort((first, second) => first.score - second.score)[0]?.placement || (pointX > rect.width / 2 ? 'left' : 'right');
 };
 
 const buildSmoothPath = (points: Array<{ x: number; y: number }>) => {
@@ -383,21 +475,36 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
 
     if (rect) {
       const tooltipWidth = Math.min(360, Math.max(280, rect.width - 28));
-      const tooltipHeight = Math.min(342, Math.max(280, rect.height - 28));
+      const tooltipHeight = Math.min(320, Math.max(260, rect.height * 0.58));
       const gutter = 18;
-      const rightMax = ((rect.width - tooltipWidth - gutter) / rect.width) * 100;
-      const leftMin = ((tooltipWidth + gutter) / rect.width) * 100;
+      const tooltipWidthPct = (tooltipWidth / rect.width) * 100;
+      const tooltipHeightPct = (tooltipHeight / rect.height) * 100;
+      const gutterXPct = (gutter / rect.width) * 100;
+      const gutterYPct = (gutter / rect.height) * 100;
+      const halfWidthPct = tooltipWidthPct / 2 + gutterXPct;
+      const halfHeightPct = tooltipHeightPct / 2 + gutterYPct;
 
-      if (side === 'right' && anchorX > rightMax) side = 'left';
-      if (side === 'left' && anchorX < leftMin) side = 'right';
+      side = chooseTooltipPlacement(point, rect, tooltipWidth, tooltipHeight);
 
-      left = side === 'right'
-        ? clamp(anchorX, 3, Math.max(3, rightMax))
-        : clamp(anchorX, Math.min(96, leftMin), 97);
+      if (side === 'right') {
+        left = clamp(anchorX, gutterXPct, 100 - tooltipWidthPct - gutterXPct);
+        top = clamp(anchorY, halfHeightPct, 100 - halfHeightPct);
+      }
 
-      const topMin = ((tooltipHeight / 2 + gutter) / rect.height) * 100;
-      const topMax = ((rect.height - tooltipHeight / 2 - gutter) / rect.height) * 100;
-      top = clamp(anchorY, topMin, topMax);
+      if (side === 'left') {
+        left = clamp(anchorX, tooltipWidthPct + gutterXPct, 100 - gutterXPct);
+        top = clamp(anchorY, halfHeightPct, 100 - halfHeightPct);
+      }
+
+      if (side === 'top') {
+        left = clamp(anchorX, halfWidthPct, 100 - halfWidthPct);
+        top = clamp(anchorY, tooltipHeightPct + gutterYPct, 100 - gutterYPct);
+      }
+
+      if (side === 'bottom') {
+        left = clamp(anchorX, halfWidthPct, 100 - halfWidthPct);
+        top = clamp(anchorY, gutterYPct, 100 - tooltipHeightPct - gutterYPct);
+      }
     }
 
     setTooltipPlacement(side);
@@ -405,44 +512,55 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
     setTooltipVisible(true);
   };
 
-  const getNearestIndex = (clientX: number, clientY: number) => {
-    if (!svgRef.current || plotData.length === 0) return 0;
+  const getPointerPoint = (clientX: number, clientY: number): PointerPoint | null => {
+    if (!svgRef.current) return null;
     const rect = svgRef.current.getBoundingClientRect();
-    const x = ((clientX - rect.left) / rect.width) * VIEWBOX_WIDTH;
-    const y = ((clientY - rect.top) / rect.height) * VIEWBOX_HEIGHT;
-    return plotData.reduce((bestIndex, point, index) => {
+    return {
+      x: ((clientX - rect.left) / rect.width) * VIEWBOX_WIDTH,
+      y: ((clientY - rect.top) / rect.height) * VIEWBOX_HEIGHT,
+    };
+  };
+
+  const getNearestIndexFromPointer = (pointer: PointerPoint) => {
+    if (plotData.length === 0) return 0;
+    const step = plotData.length > 1 ? (VIEWBOX_WIDTH - PAD_X * 2) / (plotData.length - 1) : VIEWBOX_WIDTH;
+    const stageBandWidth = Math.max(28, step * 0.54);
+    const candidateIndices = plotData
+      .map((point, index) => ({ index, xDelta: Math.abs(point.x - pointer.x) }))
+      .filter(({ xDelta }) => xDelta <= stageBandWidth)
+      .map(({ index }) => index);
+    const indices = candidateIndices.length ? candidateIndices : plotData.map((_, index) => index);
+
+    return indices.reduce((bestIndex, index) => {
+      const point = plotData[index];
       const best = plotData[bestIndex];
-      const currentDistance = Math.hypot((point.x - x) * 0.62, (point.y - y) * 1.12);
-      const bestDistance = Math.hypot((best.x - x) * 0.62, (best.y - y) * 1.12);
-      return currentDistance < bestDistance ? index : bestIndex;
-    }, 0);
+      const pointScore = Math.abs(point.x - pointer.x) + Math.abs(point.y - pointer.y) * 0.24;
+      const bestScore = Math.abs(best.x - pointer.x) + Math.abs(best.y - pointer.y) * 0.24;
+      return pointScore < bestScore ? index : bestIndex;
+    }, indices[0]);
   };
 
   const selectNearestPoint = (clientX: number, clientY: number) => {
     if (tooltipLocked || plotData.length === 0) return;
-    const nearestIndex = getNearestIndex(clientX, clientY);
+    const pointer = getPointerPoint(clientX, clientY);
+    if (!pointer) return;
+    const nearestIndex = getNearestIndexFromPointer(pointer);
     setActiveIndex(nearestIndex);
     setTooltipFromPoint(plotData[nearestIndex]);
   };
 
-  const toggleTooltipLock = (index: number) => {
+  const unlockTooltip = () => {
+    setTooltipLocked(false);
+    setTooltipVisible(false);
+  };
+
+  const lockTooltipAtIndex = (index: number) => {
     const point = plotData[index];
     if (!point) return;
-
-    if (tooltipLocked && index === activeIndex) {
-      setTooltipLocked(false);
-      setTooltipVisible(false);
-      return;
-    }
 
     setActiveIndex(index);
     setTooltipFromPoint(point);
     setTooltipLocked(true);
-  };
-
-  const toggleNearestTooltipLock = (clientX: number, clientY: number) => {
-    if (plotData.length === 0) return;
-    toggleTooltipLock(getNearestIndex(clientX, clientY));
   };
 
   useGSAP(() => {
@@ -715,7 +833,9 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
               height={VOLUME_TOP + VOLUME_HEIGHT - CHART_TOP}
               fill="transparent"
               onMouseMove={(event) => selectNearestPoint(event.clientX, event.clientY)}
-              onClick={(event) => toggleNearestTooltipLock(event.clientX, event.clientY)}
+              onClick={() => {
+                if (tooltipLocked) unlockTooltip();
+              }}
               onTouchMove={(event) => {
                 const touch = event.touches[0];
                 if (touch) selectNearestPoint(touch.clientX, touch.clientY);
@@ -743,12 +863,12 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
                   }}
                   onClick={(event) => {
                     event.stopPropagation();
-                    toggleTooltipLock(index);
+                    lockTooltipAtIndex(index);
                   }}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
-                      toggleTooltipLock(index);
+                      lockTooltipAtIndex(index);
                     }
                   }}
                   onBlur={() => {
@@ -801,7 +921,14 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
                   <h3 className="mt-1 text-base font-black text-slate-950">{activePoint.stageName} / {activePoint.label}</h3>
                   <p className="mt-1 text-xs font-semibold text-slate-600">{activePoint.style}</p>
                 </div>
-                <DeltaBadge value={activePoint.delta} />
+                <div className="flex items-center gap-2">
+                  <DeltaBadge value={activePoint.delta} />
+                  {tooltipLocked && (
+                    <button type="button" className="wku-tooltip-close" onClick={unlockTooltip}>
+                      解除锁定
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-[11px]">
@@ -830,7 +957,7 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
                 </div>
               </div>
               <p className="mt-3 text-[11px] font-bold text-slate-500">
-                {tooltipLocked ? '单击当前点位取消锁定，或单击其他点位切换读盘。' : '单击任一点位可锁定读盘卡片。'}
+                {tooltipLocked ? '点击空白处或按钮解除锁定；只有点到节点时才会切换读盘。' : '移动查看节点，点击节点可锁定读盘卡片。'}
               </p>
             </div>
           )}
