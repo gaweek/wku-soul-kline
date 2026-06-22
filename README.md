@@ -233,6 +233,8 @@ Environment: API_BASE_URL, API_KEY, DEFAULT_MODEL, PORT
 
 ## 更新线上版本
 
+完整迭代流程见：[docs/ITERATION-WORKFLOW.md](docs/ITERATION-WORKFLOW.md)。
+
 本地提交并推送：
 
 ```bash
