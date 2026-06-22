@@ -58,3 +58,20 @@ test('loading preview carries the six agent progress beside the chart', () => {
   assert.match(pageSource, /agentStatuses=\{agentStatuses\}/);
   assert.match(cssSource, /wku-loading-agent-panel/);
 });
+
+test('active generation uses preview as the only full agent progress surface', () => {
+  assert.match(pageSource, /AgentHandoffCard/);
+  assert.match(pageSource, /进度已同步到预览盘/);
+  assert.match(pageSource, /activeLoading\s*\?\s*\(\s*<AgentHandoffCard[\s\S]*\)\s*:\s*\(\s*<AgentConsole/);
+  assert.match(cssSource, /wku-agent-handoff/);
+});
+
+test('generated results render directly without an expand gate', () => {
+  assert.equal(pageSource.includes('resultVisible'), false);
+  assert.equal(pageSource.includes('handleViewResult'), false);
+  assert.equal(pageSource.includes('wku-result-gate'), false);
+  assert.equal(pageSource.includes('展开完整读盘'), false);
+  assert.equal(pageSource.includes('查看读盘'), false);
+  assert.match(pageSource, /result \? \(/);
+  assert.match(pageSource, /matchResult \? \(/);
+});

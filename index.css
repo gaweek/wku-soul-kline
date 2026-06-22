@@ -411,7 +411,8 @@
 
   .wku-lens-desk,
   .wku-input-deck,
-  .wku-agent-console {
+  .wku-agent-console,
+  .wku-agent-handoff {
     border: 1px solid rgba(148, 163, 184, 0.3);
     border-radius: 16px;
     background:
@@ -481,6 +482,26 @@
     padding: 14px;
   }
 
+  .wku-agent-handoff {
+    padding: 16px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(236, 254, 255, 0.54)),
+      radial-gradient(circle at 92% 0%, rgba(20, 184, 166, 0.14), transparent 34%);
+  }
+
+  .wku-agent-handoff > div > span {
+    display: inline-flex;
+    min-height: 30px;
+    align-items: center;
+    border-radius: 999px;
+    background: #020617;
+    padding: 0 10px;
+    color: #f8fafc;
+    font-size: 12px;
+    font-weight: 900;
+    white-space: nowrap;
+  }
+
   .wku-lens-desk .wku-agent-console {
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(236, 254, 255, 0.44)),
@@ -509,8 +530,7 @@
     padding: 14px 16px;
   }
 
-  .wku-view-result-button,
-  .wku-result-gate-button {
+  .wku-view-result-button {
     display: inline-flex;
     min-height: 46px;
     min-width: 132px;
@@ -531,57 +551,13 @@
   }
 
   .wku-view-result-button:hover,
-  .wku-view-result-button:focus-visible,
-  .wku-result-gate-button:hover,
-  .wku-result-gate-button:focus-visible {
+  .wku-view-result-button:focus-visible {
     border-color: rgba(15, 118, 110, 0.58);
     background:
       linear-gradient(180deg, rgba(236, 254, 255, 0.98), rgba(204, 251, 241, 0.8));
     box-shadow: 0 6px 10px rgba(15, 118, 110, 0.12);
     outline: none;
     transform: translateY(-1px);
-  }
-
-  .wku-result-gate-button {
-    border-color: rgba(15, 23, 42, 0.84);
-    background:
-      linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(6, 78, 59, 0.92)),
-      radial-gradient(circle at 80% 0%, rgba(103, 232, 249, 0.24), transparent 42%);
-    color: #ecfeff;
-  }
-
-  .wku-result-gate-button:hover,
-  .wku-result-gate-button:focus-visible {
-    border-color: rgba(20, 184, 166, 0.58);
-    background:
-      linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(13, 148, 136, 0.9)),
-      radial-gradient(circle at 80% 0%, rgba(217, 249, 157, 0.24), transparent 42%);
-  }
-
-  .wku-result-gate {
-    position: relative;
-    overflow: hidden;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 18px;
-    align-items: center;
-    border: 1px solid rgba(20, 184, 166, 0.28);
-    border-radius: 18px;
-    background:
-      radial-gradient(circle at 80% 0%, rgba(217, 249, 157, 0.18), transparent 30%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(236, 254, 255, 0.58));
-    padding: 22px;
-    backdrop-filter: blur(18px);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-  }
-
-  .wku-result-gate::after {
-    content: "";
-    position: absolute;
-    inset: auto 22px 0 22px;
-    height: 2px;
-    background: linear-gradient(90deg, #06b6d4, #14b8a6, #a3e635);
-    opacity: 0.8;
   }
 
   .wku-generation-scroll-note {
@@ -1099,8 +1075,7 @@
     .wku-workbench-header,
     .wku-mode-choice-head,
     .wku-input-deck-head,
-    .wku-command-ribbon,
-    .wku-result-gate {
+    .wku-command-ribbon {
       grid-template-columns: 1fr;
       flex-direction: column;
       align-items: flex-start;
@@ -1168,7 +1143,7 @@
     }
 
     .wku-view-result-button,
-    .wku-result-gate-button {
+    .wku-agent-handoff .wku-view-result-button {
       width: 100%;
     }
 

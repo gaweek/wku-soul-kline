@@ -572,6 +572,30 @@ const AgentConsole: React.FC<{
   </div>
 );
 
+const AgentHandoffCard: React.FC<{
+  completedCount: number;
+  progress: string;
+  mode: Mode;
+  onJump: () => void;
+}> = ({ completedCount, progress, mode, onJump }) => (
+  <div className="wku-agent-handoff">
+    <div className="flex items-start justify-between gap-3">
+      <div>
+        <p className="text-xs font-black text-teal-700">进度已同步到预览盘</p>
+        <h2 className="mt-1 text-base font-black text-slate-950">
+          {mode === 'single' ? 'Who Know U 正在生成' : 'Who Know Us 正在生成'}
+        </h2>
+      </div>
+      <span>{completedCount}/6</span>
+    </div>
+    <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">{progress}</p>
+    <button type="button" onClick={onJump} className="wku-view-result-button mt-4 w-full">
+      查看生成进度
+      <ArrowDown className="h-4 w-4" />
+    </button>
+  </div>
+);
+
 const FactorCard: React.FC<{
   factor: SoulKLineFactor;
   type: 'up' | 'down';
@@ -684,7 +708,6 @@ const VibeLinePage: React.FC = () => {
   const [error, setError] = useState('');
   const [matchError, setMatchError] = useState('');
   const [copiedId, setCopiedId] = useState('');
-  const [resultVisible, setResultVisible] = useState(false);
   const [scrollIntent, setScrollIntent] = useState<Mode | null>(null);
   const { contextSafe } = useGSAP({ scope: pageRef });
 
@@ -764,23 +787,6 @@ const VibeLinePage: React.FC = () => {
     }
   });
 
-  const revealResultBlock = contextSafe(() => {
-    resultSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      gsap.fromTo(
-        '.wku-result-block',
-        { autoAlpha: 0.86, y: 18 },
-        {
-          autoAlpha: 1,
-          y: 0,
-          duration: 0.48,
-          ease: 'power3.out',
-          clearProps: 'transform,opacity,visibility',
-        }
-      );
-    }
-  });
-
   const scrollToGenerationPreview = (runMode: Mode) => {
     setScrollIntent(runMode);
     window.setTimeout(performGenerationPreviewScroll, 80);
@@ -788,7 +794,6 @@ const VibeLinePage: React.FC = () => {
 
   const handleModeChange = (nextMode: Mode) => {
     setMode(nextMode);
-    setResultVisible(false);
     setScrollIntent(null);
     setAgentStatuses(createInitialVibeLineAgentStatuses());
     setProgress(nextMode === 'single' ? '等待生成你的 WKU soul-kline' : '等待生成你们的 Who Know Us');
@@ -800,11 +805,6 @@ const VibeLinePage: React.FC = () => {
     window.setTimeout(() => {
       document.getElementById('wku-experience')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 40);
-  };
-
-  const handleViewResult = () => {
-    setResultVisible(true);
-    window.setTimeout(revealResultBlock, 40);
   };
 
   useGSAP(() => {
@@ -847,7 +847,6 @@ const VibeLinePage: React.FC = () => {
   const runAnalyze = async () => {
     if (!canSubmit) return;
     setLoading(true);
-    setResultVisible(false);
     setError('');
     setResult(null);
     setProgress('正在启动 Who Know U 连接引擎');
@@ -889,7 +888,6 @@ const VibeLinePage: React.FC = () => {
   const runMatch = async () => {
     if (!canMatch) return;
     setMatchLoading(true);
-    setResultVisible(false);
     setMatchError('');
     setMatchResult(null);
     setProgress('正在启动 Who Know Us 共振引擎');
@@ -1111,12 +1109,21 @@ const VibeLinePage: React.FC = () => {
                   </div>
                 </div>
 
-                <AgentConsole
-                  statusMap={agentStatuses}
-                  completedCount={completedCount}
-                  progress={progress}
-                  mode={mode}
-                />
+                {activeLoading ? (
+                  <AgentHandoffCard
+                    completedCount={completedCount}
+                    progress={progress}
+                    mode={mode}
+                    onJump={() => resultSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  />
+                ) : (
+                  <AgentConsole
+                    statusMap={agentStatuses}
+                    completedCount={completedCount}
+                    progress={progress}
+                    mode={mode}
+                  />
+                )}
               </aside>
 
               <section className="wku-input-deck">
@@ -1190,7 +1197,7 @@ const VibeLinePage: React.FC = () => {
                   <div className="min-w-0">
                     <p className="text-sm font-black text-slate-950">{activeActionLabel}</p>
                     <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
-                      {activeResultReady ? '读盘已经生成。你可以继续修改样本重新生成，也可以先查看完整 soul-kline。' : activeLoading ? progress : '样本准备好后点击生成 soul-kline，系统会先读懂样本，再进入读盘。'}
+                      {activeResultReady ? '读盘已经生成。你可以继续修改样本重新生成，结果已在下方同步更新。' : activeLoading ? progress : '样本准备好后点击生成 soul-kline，系统会先读懂样本，再进入读盘。'}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1202,12 +1209,6 @@ const VibeLinePage: React.FC = () => {
                       {activeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                       {generateButtonLabel}
                     </button>
-                    {activeResultReady && (
-                      <button type="button" onClick={handleViewResult} className="wku-view-result-button">
-                        查看读盘
-                        <ArrowDown className="h-4 w-4" />
-                      </button>
-                    )}
                   </div>
                 </div>
               </section>
@@ -1221,34 +1222,13 @@ const VibeLinePage: React.FC = () => {
                 <span>{getGenerationScrollMessage(scrollIntent || mode)}</span>
               </div>
             )}
-            {activeResultReady && !resultVisible ? (
-              <div className="wku-result-gate">
-                <div>
-                  <p className="text-xs font-black text-teal-700">生成完成</p>
-                  <h2 className="mt-1 text-2xl font-black text-slate-950">{modeMeta.name} 已经准备好</h2>
-                  <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-slate-600">
-                    你的样本已经完成读盘。点击查看结果后，会展开完整 K 线、被懂信号、错频提醒和可复制的表达建议。
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {mode === 'single' && (
-                    <button type="button" onClick={startMatchFromSingle} className="wku-view-result-button">
-                      去看我和 TA
-                      <Users className="h-4 w-4" />
-                    </button>
-                  )}
-                  <button type="button" onClick={handleViewResult} className="wku-result-gate-button">
-                    展开完整读盘
-                    <ArrowDown className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            ) : mode === 'single' ? (
+            {mode === 'single' ? (
               <>
                 <VibeLineChart data={result?.kline || []} loading={loading} loadingText={progress} modeLabel="Who Know U" agentStatuses={agentStatuses} />
 
-                {result && resultVisible ? (
-                  <>
+                {!loading && (
+                  result ? (
+                    <>
                     <div className={`${panelClass} p-5`}>
                       <div className="mb-3 flex flex-wrap items-center gap-3">
                         <span className="rounded-md bg-slate-950 px-3 py-1 text-sm font-black text-white">
@@ -1269,6 +1249,10 @@ const VibeLinePage: React.FC = () => {
                         )}
                       </div>
                       <p className="text-base leading-8 text-slate-700">{result.summary}</p>
+                      <button type="button" onClick={startMatchFromSingle} className="wku-view-result-button mt-4">
+                        去看我和 TA
+                        <Users className="h-4 w-4" />
+                      </button>
                     </div>
 
                     <div className="grid gap-4 xl:grid-cols-2">
@@ -1337,15 +1321,17 @@ const VibeLinePage: React.FC = () => {
                         </div>
                       </div>
                     </div>
-                  </>
-                ) : <ResultPreviewPanel mode="single" />}
+                    </>
+                  ) : <ResultPreviewPanel mode="single" />
+                )}
               </>
             ) : (
               <>
                   <VibeLineChart data={matchResult?.resonanceKline || []} loading={matchLoading} loadingText={progress} modeLabel="Who Know Us" agentStatuses={agentStatuses} />
 
-                {matchResult && resultVisible ? (
-                  <>
+                {!matchLoading && (
+                  matchResult ? (
+                    <>
                     <div className={`${panelClass} p-5`}>
                       <div className="mb-3 flex flex-wrap items-center gap-3">
                         <span className="rounded-md bg-slate-950 px-3 py-1 text-sm font-black text-white">
@@ -1421,8 +1407,9 @@ const VibeLinePage: React.FC = () => {
                       </div>
                       <p className="mt-3 text-xs font-semibold leading-5 text-slate-600">{matchResult.safety.note}</p>
                     </div>
-                  </>
-                ) : <ResultPreviewPanel mode="match" />}
+                    </>
+                  ) : <ResultPreviewPanel mode="match" />
+                )}
               </>
             )}
           </section>
