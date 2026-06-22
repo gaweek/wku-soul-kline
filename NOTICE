@@ -1,0 +1,14 @@
+WKU soul-kline
+Copyright 2026 WKU soul-kline Team
+
+This product contains software developed for the WKU soul-kline demo.
+
+Primary third-party runtime dependencies:
+- React
+- React DOM
+- React Router
+- Express
+- GSAP
+- Lucide React
+- node-fetch
+- dotenv

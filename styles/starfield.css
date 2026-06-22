@@ -1,0 +1,92 @@
+/* 星空背景效果 */
+.starfield-bg {
+  position: relative;
+  background: linear-gradient(180deg, #312e81 0%, #1e1b4b 50%, #0f172a 100%);
+  overflow: hidden;
+}
+
+.starfield-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    radial-gradient(2px 2px at 20px 30px, rgba(255,255,255,0.8), transparent),
+    radial-gradient(2px 2px at 60px 70px, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 50px 50px, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.4), transparent),
+    radial-gradient(2px 2px at 90px 10px, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 150px 120px, rgba(255,255,255,0.5), transparent),
+    radial-gradient(2px 2px at 180px 50px, rgba(255,255,255,0.6), transparent);
+  background-size: 200px 200px;
+  background-repeat: repeat;
+  opacity: 0.6;
+  animation: twinkle 4s ease-in-out infinite;
+}
+
+.starfield-bg::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(ellipse at top, rgba(99, 102, 241, 0.2) 0%, transparent 50%),
+              radial-gradient(ellipse at bottom, rgba(126, 34, 206, 0.15) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+}
+
+/* 毛玻璃卡片 */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+}
+
+.glass-card-dark {
+  background: rgba(30, 27, 75, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 金色光晕效果 */
+.glow-golden {
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.4), 0 0 40px rgba(251, 191, 36, 0.2);
+}
+
+/* 紫色光晕效果 */
+.glow-purple {
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.4), 0 0 40px rgba(147, 51, 234, 0.2);
+}
+
+/* 渐变文字 */
+.gradient-text-mystic {
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-golden {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 25%, #f59e0b 50%, #ffd700 75%, #ffed4e 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}

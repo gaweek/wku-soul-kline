@@ -1,0 +1,39 @@
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { visualizer } from 'rollup-plugin-visualizer';
+
+// https://vitejs.dev/config/
+export default defineConfig(({ mode }) => {
+  return {
+    plugins: [
+      react(),
+      visualizer({
+        open: false,
+        filename: 'dist/stats.html',
+        gzipSize: true,
+        brotliSize: true
+      })
+    ],
+    base: '/',
+    server: {
+      proxy: {
+        '/api': 'http://localhost:3000',
+      },
+    },
+    build: {
+      outDir: 'dist',
+      assetsDir: 'assets',
+      sourcemap: false,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'lucide': ['lucide-react'],
+            'motion': ['gsap', '@gsap/react'],
+            'react-vendor': ['react', 'react-dom']
+          }
+        }
+      },
+      chunkSizeWarningLimit: 600
+    },
+  };
+});
