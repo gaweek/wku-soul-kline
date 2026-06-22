@@ -151,6 +151,88 @@ export const normalizePairPerspectiveCopy = (value, options = {}) => {
   return value;
 };
 
+const collectGroundingText = (value) => {
+  if (typeof value === 'string') return [value];
+  if (Array.isArray(value)) return value.flatMap(collectGroundingText);
+  if (value && typeof value === 'object') return Object.values(value).flatMap(collectGroundingText);
+  return [];
+};
+
+const sourceMentionsAny = (sourceText = '', terms = []) => {
+  const source = String(sourceText || '').toLowerCase();
+  return terms.some((term) => source.includes(String(term).toLowerCase()));
+};
+
+const replaceFastReplyClaim = (match, subject = '') => {
+  const cleanSubject = String(subject || '').trim();
+  return cleanSubject ? `${cleanSubject}的回应节奏可能比较顺` : '回应节奏可能比较顺';
+};
+
+const guardUnsupportedPairExperienceString = (text = '', sourceText = '') => {
+  let guarded = String(text || '');
+
+  if (!sourceMentionsAny(sourceText, ['秒回', '马上回', '很快回', '很快回复', '回复很快', '及时回复'])) {
+    guarded = guarded
+      .replace(/((?:他|她|Ta)\s*)?(?:几乎|总是|一直|马上|很快)?\s*秒回(?:你|你的)?(?:私信|消息|评论)?/g, replaceFastReplyClaim)
+      .replace(/(?:他|她|Ta)?\s*(?:马上|很快|及时)回复(?:你|你的)?(?:私信|消息|评论)?/g, '回应节奏可能比较顺')
+      .replace(/你也很快接话/g, '你也有接话空间');
+  }
+
+  if (!sourceMentionsAny(sourceText, ['私信', '消息', '评论', '聊天记录'])) {
+    guarded = guarded.replace(/私信|消息/g, '第一句话');
+  }
+
+  if (!sourceMentionsAny(sourceText, ['异地', '远距离', '不同城市', '距离'])) {
+    guarded = guarded
+      .replace(/异地的?距离感/g, '陌生感')
+      .replace(/异地/g, '距离感');
+  }
+
+  if (!sourceMentionsAny(sourceText, ['见面', '线下'])) {
+    guarded = guarded
+      .replace(/(?:已经|曾经|线下)?见过面/g, '已有互动样本')
+      .replace(/线下关系/g, '互动关系');
+  }
+
+  if (!sourceMentionsAny(sourceText, ['约会'])) {
+    guarded = guarded.replace(/约会/g, '靠近');
+  }
+
+  if (!sourceMentionsAny(sourceText, ['暧昧'])) {
+    guarded = guarded.replace(/暧昧/g, '升温');
+  }
+
+  if (!sourceMentionsAny(sourceText, ['恋爱', '情侣', '在一起'])) {
+    guarded = guarded.replace(/恋爱|情侣|在一起/g, '关系');
+  }
+
+  if (!sourceMentionsAny(sourceText, ['冷战', '吵架', '争执'])) {
+    guarded = guarded.replace(/冷战|吵架|争执/g, '沟通摩擦');
+  }
+
+  if (!sourceMentionsAny(sourceText, ['认识很久', '认识多年', '多年朋友'])) {
+    guarded = guarded.replace(/认识很久|认识多年|多年朋友/g, '有持续互动空间');
+  }
+
+  if (!sourceMentionsAny(sourceText, ['刚认识', '刚加', '刚匹配'])) {
+    guarded = guarded.replace(/刚认识|刚加|刚匹配/g, '处在早期了解阶段');
+  }
+
+  return guarded;
+};
+
+export const guardUnsupportedPairExperienceCopy = (value, sourceInput = {}) => {
+  const sourceText = collectGroundingText(sourceInput).join('\n');
+  if (typeof value === 'string') return guardUnsupportedPairExperienceString(value, sourceText);
+  if (Array.isArray(value)) return value.map((item) => guardUnsupportedPairExperienceCopy(item, sourceInput));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, guardUnsupportedPairExperienceCopy(item, sourceInput)])
+    );
+  }
+  return value;
+};
+
 export const normalizeVibeLineVisibleCopy = (result = {}, options = {}) => ({
   ...result,
   marketType: normalizeSinglePerspectiveCopy(result.marketType, options),
@@ -172,33 +254,38 @@ export const normalizeVibeMatchVisibleCopy = (result = {}, options = {}) => {
     personBGender: options.personBGender || result.input?.personB?.gender || result.personB?.input?.gender,
     otherPronoun: options.otherPronoun,
   };
+  const sourceInput = options.sourceInput || result.input || {};
+  const normalizePairVisibleCopy = (value) => guardUnsupportedPairExperienceCopy(
+    normalizePairPerspectiveCopy(value, pairOptions),
+    sourceInput
+  );
 
   return {
     ...result,
     personA: result.personA
       ? {
           ...result.personA,
-          marketType: normalizePairPerspectiveCopy(result.personA.marketType, pairOptions),
-          summary: normalizePairPerspectiveCopy(result.personA.summary, pairOptions),
-          safety: normalizePairPerspectiveCopy(result.personA.safety, pairOptions),
+          marketType: normalizePairVisibleCopy(result.personA.marketType),
+          summary: normalizePairVisibleCopy(result.personA.summary),
+          safety: normalizePairVisibleCopy(result.personA.safety),
         }
       : result.personA,
     personB: result.personB
       ? {
           ...result.personB,
-          marketType: normalizePairPerspectiveCopy(result.personB.marketType, pairOptions),
-          summary: normalizePairPerspectiveCopy(result.personB.summary, pairOptions),
-          safety: normalizePairPerspectiveCopy(result.personB.safety, pairOptions),
+          marketType: normalizePairVisibleCopy(result.personB.marketType),
+          summary: normalizePairVisibleCopy(result.personB.summary),
+          safety: normalizePairVisibleCopy(result.personB.safety),
         }
       : result.personB,
-    marketType: normalizePairPerspectiveCopy(result.marketType, pairOptions),
-    summary: normalizePairPerspectiveCopy(result.summary, pairOptions),
-    resonanceKline: normalizePairPerspectiveCopy(result.resonanceKline, pairOptions),
-    overlapSignals: normalizePairPerspectiveCopy(result.overlapSignals, pairOptions),
-    mismatchRisks: normalizePairPerspectiveCopy(result.mismatchRisks, pairOptions),
-    stageAdvice: normalizePairPerspectiveCopy(result.stageAdvice, pairOptions),
-    conversationBridges: normalizePairPerspectiveCopy(result.conversationBridges, pairOptions),
-    safety: normalizePairPerspectiveCopy(result.safety, pairOptions),
+    marketType: normalizePairVisibleCopy(result.marketType),
+    summary: normalizePairVisibleCopy(result.summary),
+    resonanceKline: normalizePairVisibleCopy(result.resonanceKline),
+    overlapSignals: normalizePairVisibleCopy(result.overlapSignals),
+    mismatchRisks: normalizePairVisibleCopy(result.mismatchRisks),
+    stageAdvice: normalizePairVisibleCopy(result.stageAdvice),
+    conversationBridges: normalizePairVisibleCopy(result.conversationBridges),
+    safety: normalizePairVisibleCopy(result.safety),
   };
 };
 

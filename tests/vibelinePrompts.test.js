@@ -76,6 +76,14 @@ test('Who Know Us prompts describe personB gendered pronoun rule', () => {
   }
 });
 
+test('Who Know Us prompts explicitly forbid inventing unprovided relationship experiences', () => {
+  for (const agent of VIBEMATCH_AGENT_DEFINITIONS) {
+    assert.equal(agent.systemPrompt.includes('不要编造输入里没有的具体经历'), true, agent.type);
+    assert.equal(agent.systemPrompt.includes('秒回、异地、见面、约会、暧昧'), true, agent.type);
+    assert.equal(agent.systemPrompt.includes('如果输入没有明确提到，只能写成可能、适合或建议'), true, agent.type);
+  }
+});
+
 test('Who Know Us analyzer does not complete from fallback builder', () => {
   const source = readFileSync(new URL('../server/vibelineMatchAnalyzer.js', import.meta.url), 'utf8');
 

@@ -333,3 +333,42 @@ test('normalizePairPerspectiveCopy can rewrite personB to a gendered pronoun', (
   assert.match(visibleCopy, /她的节奏/);
   assert.match(visibleCopy, /她接一个生活片段/);
 });
+
+test('normalizeVibeMatchVisibleCopy removes ungrounded concrete relationship experiences', () => {
+  const normalized = engine.normalizeVibeMatchVisibleCopy({
+    input: {
+      personA: {
+        draft: '我喜欢音乐和散步，想知道第一句话怎么自然一点。',
+        interests: ['音乐', '散步'],
+      },
+      personB: {
+        draft: '我喜欢看展和摄影，聊天节奏比较温和。',
+        interests: ['看展', '摄影'],
+        gender: '女',
+      },
+      relationshipGoal: '想知道怎么自然靠近',
+    },
+    summary: '她几乎秒回你的私信，你也很快接话，异地的距离感暂时被对话节奏冲淡。',
+    resonanceKline: [
+      {
+        reason: '她几乎秒回你的私信，你也很快接话，异地的距离感暂时被对话节奏冲淡。',
+      },
+    ],
+    overlapSignals: [],
+    mismatchRisks: [],
+    stageAdvice: [],
+    conversationBridges: [],
+    safety: {
+      note: '双人结果仅用于兴趣社交中的表达参考。',
+    },
+  });
+
+  const visibleCopy = collectStringValues({
+    summary: normalized.summary,
+    resonanceKline: normalized.resonanceKline,
+  }).join('\n');
+
+  assert.doesNotMatch(visibleCopy, /秒回|异地|私信/);
+  assert.match(visibleCopy, /回应节奏可能比较顺/);
+  assert.match(visibleCopy, /陌生感/);
+});

@@ -14,6 +14,9 @@ const PAIR_VISIBLE_COPY_RULE = `
 双人模式的面向结果文字必须统一使用“你”指代 personA，默认使用“Ta”指代 personB。
 如果 personB 性别为“男”时使用“他”；如果 personB 性别为“女”时使用“她”；personB 为非二元、暂不透露或未填写时继续使用“Ta”。
 不要输出英文字母编号、斜杠组合编号、带“的”的内部编号称呼；内部 JSON 字段名 personAInsight、personBInsight 可以保留。
+不要编造输入里没有的具体经历，包括但不限于秒回、异地、见面、约会、暧昧、恋爱、分手、冷战、认识时长、线下关系或已经发生的聊天细节。
+如果输入没有明确提到，只能写成可能、适合或建议，不能写成已经发生的事实。
+所有 reason、evidence、summary、highlight、risk 和 suggestion 都必须能回到输入证据；没有证据时写“输入样本不足以判断具体经历”。
 `;
 
 export const VIBELINE_AGENT_DEFINITIONS = [
