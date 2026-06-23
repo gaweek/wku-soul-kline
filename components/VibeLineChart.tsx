@@ -384,6 +384,7 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
   const [tooltipPosition, setTooltipPosition] = useState({ left: '50%', top: '30%' });
   const [tooltipPlacement, setTooltipPlacement] = useState<TooltipPlacement>('right');
   const [tooltipLocked, setTooltipLocked] = useState(false);
+  const [hoveredStageName, setHoveredStageName] = useState<string | null>(null);
   const chartRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -391,6 +392,7 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
     setActiveIndex(0);
     setTooltipVisible(false);
     setTooltipLocked(false);
+    setHoveredStageName(null);
   }, [chartData.length, modeLabel]);
 
   const plotData = useMemo<PlotPoint[]>(() => {
@@ -411,6 +413,7 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
   }, [chartData]);
 
   const activePoint = plotData[Math.min(activeIndex, Math.max(0, plotData.length - 1))] || plotData[0];
+  const activeStageName = hoveredStageName || activePoint?.stageName || '';
 
   const paths = useMemo(() => {
     const closePath = buildSmoothPath(plotData.map((point) => ({ x: point.x, y: point.y })));
@@ -545,19 +548,33 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
     const pointer = getPointerPoint(clientX, clientY);
     if (!pointer) return;
     const nearestIndex = getNearestIndexFromPointer(pointer);
+    setHoveredStageName(plotData[nearestIndex].stageName);
     setActiveIndex(nearestIndex);
     setTooltipFromPoint(plotData[nearestIndex]);
+  };
+
+  const focusStageGroup = (group: StageGroup) => {
+    if (tooltipLocked || plotData.length === 0) return;
+    const targetIndex = Math.min(plotData.length - 1, group.startIndex + Math.floor(group.count / 2));
+    const targetPoint = plotData[targetIndex];
+    if (!targetPoint) return;
+
+    setHoveredStageName(group.name);
+    setActiveIndex(targetIndex);
+    setTooltipFromPoint(targetPoint);
   };
 
   const unlockTooltip = () => {
     setTooltipLocked(false);
     setTooltipVisible(false);
+    setHoveredStageName(null);
   };
 
   const lockTooltipAtIndex = (index: number) => {
     const point = plotData[index];
     if (!point) return;
 
+    setHoveredStageName(point.stageName);
     setActiveIndex(index);
     setTooltipFromPoint(point);
     setTooltipLocked(true);
@@ -655,6 +672,12 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
           <p className="max-w-2xl text-sm leading-6 text-slate-700">
             六阶段连接生命周期，每阶段拆成 3 个微节点。沿曲线移动或聚焦节点，读盘卡片会解释当前点位。
           </p>
+          <div className="wku-score-guide wku-chart-score-guide" aria-label="分数怎么读">
+            <div className="wku-score-guide-head">
+              <p className="text-xs font-black text-teal-700">分数怎么读</p>
+              <span>70+：更容易继续靠近 · 50-69：需要更具体话题 · 低于 50：先降低推进感</span>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-2 text-xs">
@@ -679,7 +702,10 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
         <div
           className="wku-chart-shell relative overflow-hidden"
           onMouseLeave={() => {
-            if (!tooltipLocked) setTooltipVisible(false);
+            if (!tooltipLocked) {
+              setTooltipVisible(false);
+              setHoveredStageName(null);
+            }
           }}
         >
           <svg
@@ -771,7 +797,7 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
             })}
 
             {stageGroups.map((group, index) => {
-              const active = activePoint?.stageName === group.name;
+              const active = activeStageName === group.name;
               return (
               <g key={group.name}>
                 {active && (
@@ -841,23 +867,60 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
                 if (touch) selectNearestPoint(touch.clientX, touch.clientY);
               }}
               onTouchEnd={() => {
-                if (!tooltipLocked) setTooltipVisible(false);
+                if (!tooltipLocked) {
+                  setTooltipVisible(false);
+                  setHoveredStageName(null);
+                }
               }}
             />
 
+            {stageGroups.map((group) => (
+              <rect
+                key={`stage-hover-${group.name}`}
+                className="wku-stage-hover-zone"
+                x={Math.max(PAD_X, group.startX - 24)}
+                y={CHART_TOP}
+                width={Math.min(VIEWBOX_WIDTH - PAD_X, group.endX + 24) - Math.max(PAD_X, group.startX - 24)}
+                height={VOLUME_TOP + VOLUME_HEIGHT - CHART_TOP}
+                rx="14"
+                fill="transparent"
+                role="button"
+                tabIndex={0}
+                aria-label={`查看${group.name}阶段的三个节点`}
+                onMouseEnter={() => focusStageGroup(group)}
+                onMouseMove={() => focusStageGroup(group)}
+                onFocus={() => focusStageGroup(group)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    focusStageGroup(group);
+                  }
+                }}
+                onMouseLeave={() => {
+                  if (!tooltipLocked) setHoveredStageName(null);
+                }}
+                onClick={() => {
+                  if (tooltipLocked) unlockTooltip();
+                }}
+              />
+            ))}
+
             {plotData.map((point, index) => {
               const isActive = activePoint?.id === point.id;
+              const isStageActive = activeStageName === point.stageName;
               const isMajor = stageAnchorIndices.has(index);
               return (
                 <g
                 key={point.id}
                   onMouseEnter={() => {
                     if (tooltipLocked) return;
+                    setHoveredStageName(point.stageName);
                     setActiveIndex(index);
                     setTooltipFromPoint(point);
                   }}
                   onFocus={() => {
                     if (tooltipLocked) return;
+                    setHoveredStageName(point.stageName);
                     setActiveIndex(index);
                     setTooltipFromPoint(point);
                   }}
@@ -875,15 +938,15 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
                     if (!tooltipLocked) setTooltipVisible(false);
                   }}
                   tabIndex={0}
-                className={`cursor-pointer outline-none ${isActive ? 'wku-active-node' : ''}`}
+                className={`cursor-pointer outline-none ${isActive ? 'wku-active-node' : ''} ${isStageActive ? 'wku-stage-node' : ''}`}
                 >
-                  <line x1={point.x} y1={CHART_TOP} x2={point.x} y2={VOLUME_TOP + VOLUME_HEIGHT} stroke="#94a3b8" strokeOpacity={isActive ? 0.42 : 0.14} />
+                  <line x1={point.x} y1={CHART_TOP} x2={point.x} y2={VOLUME_TOP + VOLUME_HEIGHT} stroke="#94a3b8" strokeOpacity={isActive ? 0.42 : isStageActive ? 0.3 : 0.14} />
                   {isMajor && (
                     <>
-                      <circle cx={point.x} cy={point.y} r={isActive ? 22 : 18} fill="#020617" opacity={isActive ? 0.12 : 0.08} />
-                      <circle cx={point.x} cy={point.y} r={isActive ? 15 : 12} fill="#020617" stroke="#67e8f9" strokeWidth={isActive ? 3 : 2.5} />
-                      <circle cx={point.x} cy={point.y} r={isActive ? 5 : 4} fill="#d9f99d" />
-                      <rect x={point.x - 22} y={Math.max(14, point.y - 43)} width="44" height="20" rx="6" fill="#020617" opacity={isActive ? 1 : 0.9} />
+                      <circle cx={point.x} cy={point.y} r={isActive ? 22 : isStageActive ? 20 : 18} fill="#020617" opacity={isActive ? 0.12 : isStageActive ? 0.1 : 0.08} />
+                      <circle cx={point.x} cy={point.y} r={isActive ? 15 : isStageActive ? 13.5 : 12} fill="#020617" stroke={isStageActive ? '#a3e635' : '#67e8f9'} strokeWidth={isActive ? 3 : 2.5} />
+                      <circle cx={point.x} cy={point.y} r={isActive ? 5 : isStageActive ? 4.8 : 4} fill="#d9f99d" />
+                      <rect x={point.x - 22} y={Math.max(14, point.y - 43)} width="44" height="20" rx="6" fill="#020617" opacity={isActive || isStageActive ? 1 : 0.9} />
                       <text x={point.x} y={Math.max(28, point.y - 29)} textAnchor="middle" fill="#e0f2fe" fontSize="10" fontWeight="900">
                         {point.stageName}
                       </text>
@@ -891,8 +954,8 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
                   )}
                   {!isMajor && (
                     <>
-                      <circle cx={point.x} cy={point.y} r={isActive ? 8 : 4.2} fill="#ffffff" stroke={isActive ? '#0891b2' : '#0f172a'} strokeWidth={isActive ? 3 : 2} />
-                      <circle cx={point.x} cy={point.y} r={isActive ? 18 : 9} fill="none" stroke="#14b8a6" strokeOpacity={isActive ? 0.36 : 0.1} strokeWidth="2" />
+                      <circle cx={point.x} cy={point.y} r={isActive ? 8 : isStageActive ? 6 : 4.2} fill="#ffffff" stroke={isActive || isStageActive ? '#0891b2' : '#0f172a'} strokeWidth={isActive ? 3 : isStageActive ? 2.4 : 2} />
+                      <circle cx={point.x} cy={point.y} r={isActive ? 18 : isStageActive ? 14 : 9} fill="none" stroke="#14b8a6" strokeOpacity={isActive ? 0.36 : isStageActive ? 0.28 : 0.1} strokeWidth="2" />
                     </>
                   )}
                   {isActive && !isMajor && (

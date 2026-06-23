@@ -43,11 +43,36 @@ test('generation actions scroll to the preview chart with GSAP feedback', () => 
 
 test('mode discovery is promoted as two equal analysis choices', () => {
   assert.match(pageSource, /ModeChoiceCards/);
+  assert.match(pageSource, /HeroModeSwitch/);
+  assert.match(pageSource, /handleHeroModeSelect/);
   assert.match(pageSource, /我想分析自己/);
   assert.match(pageSource, /我想分析我和 TA/);
   assert.match(pageSource, /选择分析对象/);
   assert.match(pageSource, /支持单人读盘 \/ 双人共振/);
+  assert.match(pageSource, /双人模式/);
+  assert.match(cssSource, /wku-hero-mode-switch/);
   assert.match(cssSource, /wku-mode-choice-panel/);
+});
+
+test('interactive controls use a shared clickable affordance system', () => {
+  assert.match(cssSource, /wku-clickable/);
+  assert.match(cssSource, /\.wku-page button:not\(:disabled\)/);
+  assert.match(pageSource, /className="wku-hero-cta wku-clickable"/);
+  assert.match(pageSource, /className=\{`wku-mode-choice-card wku-clickable/);
+  assert.match(pageSource, /className="wku-sample-chip wku-clickable"/);
+  assert.match(pageSource, /type="button"[\s\S]*className="wku-start-button wku-clickable/);
+});
+
+test('scores are explained where users see them', () => {
+  assert.match(pageSource, /ScoreGuide/);
+  assert.match(pageSource, /分数怎么读/);
+  assert.match(pageSource, /连接\/共振分/);
+  assert.match(pageSource, /70\+ 表示更容易继续靠近/);
+  assert.match(pageSource, /共振分 \{matchResult\.matchScore\}\/100/);
+  assert.match(pageSource, /同频/);
+  assert.match(chartSource, /分数怎么读/);
+  assert.match(chartSource, /70\+：更容易继续靠近/);
+  assert.match(cssSource, /wku-score-guide/);
 });
 
 test('loading preview carries the six agent progress beside the chart', () => {
@@ -83,6 +108,16 @@ test('chart pointer hit testing prioritizes the nearest stage band instead of ra
   assert.match(chartSource, /candidateIndices/);
   assert.match(chartSource, /Math\.abs\(point\.x - pointer\.x\)/);
   assert.match(chartSource, /Math\.abs\(point\.y - pointer\.y\) \* 0\.24/);
+});
+
+test('chart stage hover highlights all three nodes in the same lifecycle period', () => {
+  assert.match(chartSource, /hoveredStageName/);
+  assert.match(chartSource, /activeStageName/);
+  assert.match(chartSource, /focusStageGroup/);
+  assert.match(chartSource, /wku-stage-hover-zone/);
+  assert.match(chartSource, /查看\$\{group\.name\}阶段的三个节点/);
+  assert.match(chartSource, /isStageActive/);
+  assert.match(cssSource, /wku-stage-hover-zone/);
 });
 
 test('chart tooltip can dock above or below the selected node to avoid covering the k-line', () => {

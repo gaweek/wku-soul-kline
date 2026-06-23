@@ -215,6 +215,21 @@ const modeTabs: Array<{
   },
 ];
 
+const scoreGuideItems = [
+  {
+    title: '连接/共振分',
+    body: '70+ 表示更容易继续靠近，50-69 需要更明确的话题，低于 50 先降低推进感。',
+  },
+  {
+    title: '变化',
+    body: '对比开场的上升或下降，正数代表连接变顺，负数代表当前表达容易掉线。',
+  },
+  {
+    title: '被懂上限',
+    body: '这段样本最可能被接住的最高点，不是人格评分，只是当前社交样本的可读性。',
+  },
+];
+
 const parseInterests = (text: string) => {
   return text
     .split(/[,，、\n]/)
@@ -296,6 +311,35 @@ const MiniKLine: React.FC<{ active: boolean; match?: boolean }> = ({ active, mat
   </svg>
 );
 
+const HeroModeSwitch: React.FC<{
+  mode: Mode;
+  onSelectMode: (mode: Mode) => void;
+}> = ({ mode, onSelectMode }) => (
+  <div className="wku-hero-mode-switch" role="tablist" aria-label="快速选择分析模式">
+    {modeTabs.map((item) => {
+      const active = mode === item.value;
+      return (
+        <button
+          key={item.value}
+          type="button"
+          role="tab"
+          aria-selected={active}
+          aria-label={`切换到${item.subtitle}模式`}
+          onClick={() => onSelectMode(item.value)}
+          className={`wku-hero-mode-button wku-clickable ${active ? 'is-active' : ''}`}
+        >
+          <span>
+            <strong>{item.title}</strong>
+            <small>{item.value === 'match' ? '双人模式 · 看我和 TA' : '单人模式 · 看我自己'}</small>
+          </span>
+          <span className="wku-hero-mode-action">{active ? '当前模式' : '点击切换'}</span>
+        </button>
+      );
+    })}
+    <p className="wku-hero-mode-hint">想看两个人的共振关系，请选择 Who Know Us 双人模式。</p>
+  </div>
+);
+
 const ModeChoiceCards: React.FC<{
   mode: Mode;
   onChange: (mode: Mode) => void;
@@ -322,7 +366,7 @@ const ModeChoiceCards: React.FC<{
             role="tab"
             aria-selected={active}
             onClick={() => onChange(item.value)}
-            className={`wku-mode-choice-card ${active ? 'is-active' : ''}`}
+            className={`wku-mode-choice-card wku-clickable ${active ? 'is-active' : ''}`}
           >
             <span className="flex min-w-0 items-start justify-between gap-3">
               <span className="min-w-0">
@@ -337,9 +381,27 @@ const ModeChoiceCards: React.FC<{
                 <span key={tag} className="wku-lens-tag">{tag}</span>
               ))}
             </span>
+            <span className="wku-choice-action">{active ? '当前模式' : '点击切换'}</span>
           </button>
         );
       })}
+    </div>
+  </div>
+);
+
+const ScoreGuide: React.FC = () => (
+  <div className="wku-score-guide">
+    <div className="wku-score-guide-head">
+      <p className="text-xs font-black text-teal-700">分数怎么读</p>
+      <span>0-100，不评价人，只评价当前连接样本</span>
+    </div>
+    <div className="wku-score-guide-grid">
+      {scoreGuideItems.map((item) => (
+        <div key={item.title} className="wku-score-guide-item">
+          <b>{item.title}</b>
+          <p>{item.body}</p>
+        </div>
+      ))}
     </div>
   </div>
 );
@@ -589,7 +651,7 @@ const AgentHandoffCard: React.FC<{
       <span>{completedCount}/6</span>
     </div>
     <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">{progress}</p>
-    <button type="button" onClick={onJump} className="wku-view-result-button mt-4 w-full">
+    <button type="button" onClick={onJump} className="wku-view-result-button wku-clickable mt-4 w-full">
       查看生成进度
       <ArrowDown className="h-4 w-4" />
     </button>
@@ -606,7 +668,7 @@ const FactorCard: React.FC<{
       <div className="mb-2 flex items-center justify-between gap-3">
         <h3 className="text-sm font-black text-slate-950">{factor.title}</h3>
         <span className={`rounded-md px-2 py-1 text-xs font-black ${isUp ? 'bg-teal-50 text-teal-700' : 'bg-rose-50 text-rose-700'}`}>
-          {isUp ? `+${factor.impact ?? 0}` : `-${factor.risk ?? 0}`}
+          {isUp ? `+${factor.impact ?? 0} 助推` : `-${factor.risk ?? 0} 风险`}
         </span>
       </div>
       <p className="text-xs font-semibold leading-5 text-slate-600">依据：{factor.evidence}</p>
@@ -619,7 +681,7 @@ const SoulmateCard: React.FC<{ lens: AudienceLens }> = ({ lens }) => (
   <article className={`${panelClass} p-4`}>
     <div className="mb-2 flex items-start justify-between gap-3">
       <h3 className="text-sm font-black text-slate-950">{lens.type}</h3>
-      <span className="rounded-md bg-teal-50 px-2 py-1 text-xs font-black text-teal-700">{lens.resonance}</span>
+      <span className="rounded-md bg-teal-50 px-2 py-1 text-xs font-black text-teal-700">{lens.resonance} 同频</span>
     </div>
     <p className="text-sm leading-6 text-slate-700">{lens.why}</p>
     <p className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs font-semibold leading-5 text-slate-700">{lens.likelyReply}</p>
@@ -638,8 +700,9 @@ const ShareCard: React.FC<{
         <p className="text-xs font-semibold text-slate-600">{card.tone} / {card.bestFor}</p>
       </div>
       <button
+        type="button"
         onClick={() => onCopy(card)}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-200"
+        className="wku-clickable inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-200"
         title="复制"
       >
         {copiedId === card.id ? <CheckCircle2 className="h-4 w-4 text-teal-600" /> : <Copy className="h-4 w-4" />}
@@ -799,12 +862,16 @@ const VibeLinePage: React.FC = () => {
     setProgress(nextMode === 'single' ? '等待生成你的 WKU soul-kline' : '等待生成你们的 Who Know Us');
   };
 
-  const startMatchFromSingle = () => {
-    setPersonA(singleProfile);
-    handleModeChange('match');
+  const handleHeroModeSelect = (nextMode: Mode) => {
+    handleModeChange(nextMode);
     window.setTimeout(() => {
       document.getElementById('wku-experience')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 40);
+  };
+
+  const startMatchFromSingle = () => {
+    setPersonA(singleProfile);
+    handleHeroModeSelect('match');
   };
 
   useGSAP(() => {
@@ -992,14 +1059,10 @@ const VibeLinePage: React.FC = () => {
                 <p className="mt-4 max-w-[68ch] text-base leading-7 text-slate-700">
                   把生日、性别、MBTI、SBTI、兴趣和真实社交样本放进 WKU。它不判断你是谁，只把陌生人从第一眼到再次想起的连接过程，画成一条可以触摸的 soul-kline。
                 </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <span className="wku-chip wku-chip-signal">支持单人读盘 / 双人共振</span>
-                  <span className="wku-chip">Who Know U</span>
-                  <span className="wku-chip">Who Know Us</span>
-                </div>
+                <HeroModeSwitch mode={mode} onSelectMode={handleHeroModeSelect} />
               </div>
 
-              <a className="wku-hero-cta" href="#wku-experience" aria-label="立即体验 WKU soul-kline">
+              <a className="wku-hero-cta wku-clickable" href="#wku-experience" aria-label="立即体验 WKU soul-kline">
                 <span>立即体验</span>
                 <ArrowDown className="h-4 w-4" />
               </a>
@@ -1067,6 +1130,7 @@ const VibeLinePage: React.FC = () => {
                   <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">{modeMeta.description}</p>
                 </div>
                 <span className="wku-active-lens-badge">{modeMeta.short}</span>
+                <ScoreGuide />
 
                 <div className="wku-sample-bank">
                   <p className="text-xs font-black text-slate-500">{mode === 'single' ? '快速代入一个社交样本' : '快速代入一组双人样本'}</p>
@@ -1077,7 +1141,7 @@ const VibeLinePage: React.FC = () => {
                           key={sample.label}
                           type="button"
                           onClick={() => setSingleProfile(sample)}
-                          className="wku-sample-chip"
+                          className="wku-sample-chip wku-clickable"
                         >
                           {sample.label}
                         </button>
@@ -1090,7 +1154,7 @@ const VibeLinePage: React.FC = () => {
                             setPersonA(singleSamples[0]);
                             setPersonB(singleSamples[2]);
                           }}
-                          className="wku-sample-chip"
+                          className="wku-sample-chip wku-clickable"
                         >
                           慢热 × 高频
                         </button>
@@ -1100,7 +1164,7 @@ const VibeLinePage: React.FC = () => {
                             setPersonA(singleSamples[1]);
                             setPersonB(singleSamples[2]);
                           }}
-                          className="wku-sample-chip"
+                          className="wku-sample-chip wku-clickable"
                         >
                           游戏 × 夜聊
                         </button>
@@ -1136,9 +1200,10 @@ const VibeLinePage: React.FC = () => {
                   <div className="wku-input-actions">
                     <span className="wku-input-status">{activeResultReady ? '已生成' : activeLoading ? '生成中' : '待生成'}</span>
                     <button
+                      type="button"
                       onClick={mode === 'single' ? runAnalyze : runMatch}
                       disabled={!activeCanRun || activeLoading}
-                      className="wku-start-button wku-start-button-head"
+                      className="wku-start-button wku-clickable wku-start-button-head"
                     >
                       {activeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                       {generateButtonLabel}
@@ -1202,9 +1267,10 @@ const VibeLinePage: React.FC = () => {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button
+                      type="button"
                       onClick={mode === 'single' ? runAnalyze : runMatch}
                       disabled={!activeCanRun || activeLoading}
-                      className="wku-start-button"
+                      className="wku-start-button wku-clickable"
                     >
                       {activeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                       {generateButtonLabel}
@@ -1249,7 +1315,7 @@ const VibeLinePage: React.FC = () => {
                         )}
                       </div>
                       <p className="text-base leading-8 text-slate-700">{result.summary}</p>
-                      <button type="button" onClick={startMatchFromSingle} className="wku-view-result-button mt-4">
+                      <button type="button" onClick={startMatchFromSingle} className="wku-view-result-button wku-clickable mt-4">
                         去看我和 TA
                         <Users className="h-4 w-4" />
                       </button>
@@ -1338,7 +1404,7 @@ const VibeLinePage: React.FC = () => {
                           {matchResult.marketType}
                         </span>
                         <span className="rounded-md bg-teal-50 px-3 py-1 text-xs font-black text-teal-700">
-                          共振分 {matchResult.matchScore}
+                          共振分 {matchResult.matchScore}/100
                         </span>
                         <span className="rounded-md bg-sky-50 px-3 py-1 text-xs font-black text-sky-700">
                           Who Know Us 已生成
@@ -1383,7 +1449,7 @@ const VibeLinePage: React.FC = () => {
                           <article key={item.stage} className={`${panelClass} p-4`}>
                             <div className="mb-2 flex items-center justify-between">
                               <h3 className="text-sm font-black text-slate-950">{item.stage}</h3>
-                              <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-black text-slate-700">{item.score}</span>
+                              <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-black text-slate-700">{item.score} 分</span>
                             </div>
                             <p className="text-xs leading-5 text-teal-700">{item.highlight}</p>
                             <p className="mt-2 text-xs leading-5 text-rose-700">{item.risk}</p>
