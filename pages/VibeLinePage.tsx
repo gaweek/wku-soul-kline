@@ -366,9 +366,71 @@ const ModeChoiceCards: React.FC<{
   onChange: (mode: Mode) => void;
 }> = ({ mode, onChange }) => {
   const activeMode = modeTabs.find((item) => item.value === mode) ?? modeTabs[0];
+  const modeSwitchRef = useRef<HTMLDivElement>(null);
+
+  useGSAP(() => {
+    const mm = gsap.matchMedia();
+
+    mm.add(
+      {
+        reduceMotion: '(prefers-reduced-motion: reduce)',
+      },
+      (context) => {
+        const reduceMotion = Boolean(context.conditions?.reduceMotion);
+        const cards = gsap.utils.toArray<HTMLElement>('.wku-mode-switch-card');
+        const inactiveCards = gsap.utils.toArray<HTMLElement>('.wku-mode-switch-card:not(.is-active)');
+        const inactiveOrbits = gsap.utils.toArray<HTMLElement>('.wku-mode-switch-card:not(.is-active) .wku-mode-switch-orbit');
+
+        gsap.set(inactiveOrbits, {
+          autoAlpha: 1,
+          rotation: 0,
+          transformOrigin: '50% 50%',
+        });
+
+        if (reduceMotion) {
+          gsap.set(inactiveCards, { '--wku-mode-ring-opacity': 0.72 });
+          return;
+        }
+
+        gsap.fromTo(
+          cards,
+          { y: 3, scale: 0.996 },
+          {
+            y: 0,
+            scale: 1,
+            duration: 0.36,
+            ease: 'power3.out',
+            stagger: { each: 0.035, from: mode === 'match' ? 'end' : 'start' },
+            clearProps: 'transform',
+          }
+        );
+
+        gsap.to(inactiveOrbits, {
+          rotation: 360,
+          duration: 5.2,
+          ease: 'none',
+          repeat: -1,
+        });
+
+        gsap.fromTo(
+          inactiveCards,
+          { '--wku-mode-ring-opacity': 0.62 },
+          {
+            '--wku-mode-ring-opacity': 0.86,
+            duration: 1.9,
+            ease: 'sine.inOut',
+            repeat: -1,
+            yoyo: true,
+          }
+        );
+      }
+    );
+
+    return () => mm.revert();
+  }, { scope: modeSwitchRef, dependencies: [mode], revertOnUpdate: true });
 
   return (
-    <div className="wku-mode-choice-panel is-prominent">
+    <div ref={modeSwitchRef} className="wku-mode-choice-panel is-prominent">
       <div className="wku-mode-choice-head">
         <div>
           <p className="text-xs font-black text-teal-700">模式切换 · 支持单人读盘 / 双人共振</p>
@@ -388,6 +450,7 @@ const ModeChoiceCards: React.FC<{
               onClick={() => onChange(item.value)}
               className={`wku-mode-switch-card wku-clickable ${active ? 'is-active' : ''}`}
             >
+              <span className="wku-mode-switch-orbit" aria-hidden="true" />
               <span className="wku-mode-switch-card-head">
                 <span>{item.value === 'single' ? '单人模式' : '双人模式'}</span>
                 <b>{item.title}</b>

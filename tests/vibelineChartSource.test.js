@@ -69,6 +69,19 @@ test('workbench mode switch stays visible without becoming a bulky card area', (
   assert.match(cssSource, /min-height:\s*82px/);
 });
 
+test('inactive mode cards have a refined animated border affordance', () => {
+  assert.match(pageSource, /modeSwitchRef/);
+  assert.match(pageSource, /gsap\.matchMedia/);
+  assert.match(pageSource, /prefers-reduced-motion: reduce/);
+  assert.match(pageSource, /wku-mode-switch-orbit/);
+  assert.match(pageSource, /wku-mode-switch-card:not\(\.is-active\) \.wku-mode-switch-orbit/);
+  assert.match(cssSource, /wku-mode-switch-orbit/);
+  assert.match(cssSource, /conic-gradient/);
+  assert.match(cssSource, /mask-composite:\s*exclude/);
+  assert.match(cssSource, /wku-mode-switch-card:not\(\.is-active\)/);
+  assert.match(cssSource, /will-change:\s*transform,\s*opacity/);
+});
+
 test('interactive controls use a shared clickable affordance system', () => {
   assert.match(cssSource, /wku-clickable/);
   assert.match(cssSource, /\.wku-page button:not\(:disabled\)/);
