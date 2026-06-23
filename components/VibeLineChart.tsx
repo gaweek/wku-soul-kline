@@ -675,7 +675,12 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
           <div className="wku-score-guide wku-chart-score-guide" aria-label="分数怎么读">
             <div className="wku-score-guide-head">
               <p className="text-xs font-black text-teal-700">分数怎么读</p>
-              <span>70+：更容易继续靠近 · 50-69：需要更具体话题 · 低于 50：先降低推进感</span>
+              <span>先看区间，再决定动作</span>
+            </div>
+            <div className="wku-score-meter is-compact" aria-label="分数区间">
+              <span className="is-low"><b>0-49</b> 先降压</span>
+              <span className="is-mid"><b>50-69</b> 先找话题</span>
+              <span className="is-high"><b>70-100</b> 可以继续</span>
             </div>
           </div>
         </div>

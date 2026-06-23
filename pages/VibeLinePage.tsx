@@ -218,15 +218,36 @@ const modeTabs: Array<{
 const scoreGuideItems = [
   {
     title: '连接/共振分',
-    body: '70+ 表示更容易继续靠近，50-69 需要更明确的话题，低于 50 先降低推进感。',
+    body: '当前能不能继续靠近：分越高，越适合顺着话题继续聊。',
   },
   {
     title: '变化',
-    body: '对比开场的上升或下降，正数代表连接变顺，负数代表当前表达容易掉线。',
+    body: '比一开始变顺还是变难：正数是变顺，负数是容易掉线。',
   },
   {
     title: '被懂上限',
-    body: '这段样本最可能被接住的最高点，不是人格评分，只是当前社交样本的可读性。',
+    body: '这段样本最好能被接住到哪里：不是人格评分，只看这次表达。',
+  },
+];
+
+const scoreBands = [
+  {
+    range: '0-49',
+    label: '先降压',
+    body: '容易错频，先换轻一点的表达，不急着推进。',
+    tone: 'low',
+  },
+  {
+    range: '50-69',
+    label: '先找话题',
+    body: '有机会，但需要更具体的兴趣、问题或共同点接住。',
+    tone: 'mid',
+  },
+  {
+    range: '70-100',
+    label: '可以继续',
+    body: '更容易被接住，可以顺着当前话题往下聊。',
+    tone: 'high',
   },
 ];
 
@@ -343,65 +364,89 @@ const HeroModeSwitch: React.FC<{
 const ModeChoiceCards: React.FC<{
   mode: Mode;
   onChange: (mode: Mode) => void;
-}> = ({ mode, onChange }) => (
-  <div className="wku-mode-choice-panel">
-    <div className="wku-mode-choice-head">
-      <div>
-        <p className="text-xs font-black text-teal-700">选择分析对象</p>
-        <h3 className="mt-1 text-xl font-black text-slate-950">先决定这次要看哪条连接 K 线</h3>
+}> = ({ mode, onChange }) => {
+  const activeMode = modeTabs.find((item) => item.value === mode) ?? modeTabs[0];
+
+  return (
+    <div className="wku-mode-choice-panel is-compact">
+      <div className="wku-mode-choice-head">
+        <div>
+          <p className="text-xs font-black text-teal-700">模式切换</p>
+          <h3 className="mt-1 text-base font-black text-slate-950">当前：{activeMode.title}</h3>
+        </div>
+        <span>支持单人读盘 / 双人共振</span>
       </div>
-      <span>支持单人读盘 / 双人共振</span>
+      <div className="wku-mode-compact-row">
+        <div className="wku-mode-segment" role="tablist" aria-label="模式切换">
+          {modeTabs.map((item) => {
+            const active = mode === item.value;
+            return (
+              <button
+                key={item.value}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => onChange(item.value)}
+                className={`wku-mode-segment-button wku-clickable ${active ? 'is-active' : ''}`}
+              >
+                <span>{item.value === 'single' ? '单人模式' : '双人模式'}</span>
+                <b>{item.title}</b>
+              </button>
+            );
+          })}
+        </div>
+        <p className="wku-mode-current-copy">{activeMode.body}</p>
+      </div>
     </div>
-    <div
-      className="wku-mode-choice-grid"
-      role="tablist"
-      aria-label="选择分析对象"
-    >
-      {modeTabs.map((item) => {
-        const active = mode === item.value;
-        return (
-          <button
-            key={item.value}
-            type="button"
-            role="tab"
-            aria-selected={active}
-            onClick={() => onChange(item.value)}
-            className={`wku-mode-choice-card wku-clickable ${active ? 'is-active' : ''}`}
-          >
-            <span className="flex min-w-0 items-start justify-between gap-3">
-              <span className="min-w-0">
-                <span className="block text-base font-black leading-5">{item.choiceTitle}</span>
-                <span className="mt-1 block text-xs font-black">{item.title} · {item.subtitle}</span>
-              </span>
-              <MiniKLine active={active} match={item.value === 'match'} />
-            </span>
-            <span className="mt-3 block text-sm font-semibold leading-6">{item.body}</span>
-            <span className="mt-3 flex flex-wrap gap-1.5">
-              {item.tags.map((tag) => (
-                <span key={tag} className="wku-lens-tag">{tag}</span>
-              ))}
-            </span>
-            <span className="wku-choice-action">{active ? '当前模式' : '点击切换'}</span>
-          </button>
-        );
-      })}
-    </div>
-  </div>
-);
+  );
+};
 
 const ScoreGuide: React.FC = () => (
-  <div className="wku-score-guide">
-    <div className="wku-score-guide-head">
-      <p className="text-xs font-black text-teal-700">分数怎么读</p>
-      <span>0-100，不评价人，只评价当前连接样本</span>
+  <div className="wku-score-guide" aria-label="分数怎么读">
+    <div className="wku-score-section">
+      <div className="wku-score-section-title">
+        <span>当前模式</span>
+        <b>0-100 连接读盘</b>
+      </div>
+      <p className="wku-score-section-copy">不是给人打分，只告诉你这段表达现在适合怎么聊。</p>
     </div>
-    <div className="wku-score-guide-grid">
-      {scoreGuideItems.map((item) => (
-        <div key={item.title} className="wku-score-guide-item">
-          <b>{item.title}</b>
-          <p>{item.body}</p>
-        </div>
-      ))}
+
+    <div className="wku-score-section">
+      <div className="wku-score-section-title">
+        <span>读分口诀</span>
+        <b>先看颜色，再看动作</b>
+      </div>
+      <div className="wku-score-meter" aria-hidden="true">
+        {scoreBands.map((band) => (
+          <span key={band.range} className={`is-${band.tone}`}>
+            <b>{band.range}</b>
+            {band.label}
+          </span>
+        ))}
+      </div>
+      <div className="wku-score-band-grid">
+        {scoreBands.map((band) => (
+          <div key={band.range} className={`wku-score-band is-${band.tone}`}>
+            <b>{band.label}</b>
+            <p>{band.body}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <div className="wku-score-section">
+      <div className="wku-score-section-title">
+        <span>三个指标</span>
+        <b>看哪一类分</b>
+      </div>
+      <div className="wku-score-guide-grid" aria-label="指标含义">
+        {scoreGuideItems.map((item) => (
+          <div key={item.title} className="wku-score-guide-item">
+            <b>{item.title}</b>
+            <p>{item.body}</p>
+          </div>
+        ))}
+      </div>
     </div>
   </div>
 );
@@ -658,6 +703,19 @@ const AgentHandoffCard: React.FC<{
   </div>
 );
 
+const ScoreBadge: React.FC<{
+  label: string;
+  value: string | number;
+  help: string;
+  tone: 'boost' | 'risk' | 'sync' | 'stage';
+}> = ({ label, value, help, tone }) => (
+  <span className={`wku-score-badge is-${tone}`}>
+    <span>{label}</span>
+    <b>{value}</b>
+    <small>{help}</small>
+  </span>
+);
+
 const FactorCard: React.FC<{
   factor: SoulKLineFactor;
   type: 'up' | 'down';
@@ -665,11 +723,14 @@ const FactorCard: React.FC<{
   const isUp = type === 'up';
   return (
     <article className={`${panelClass} p-4`}>
-      <div className="mb-2 flex items-center justify-between gap-3">
+      <div className="mb-2 flex items-start justify-between gap-3">
         <h3 className="text-sm font-black text-slate-950">{factor.title}</h3>
-        <span className={`rounded-md px-2 py-1 text-xs font-black ${isUp ? 'bg-teal-50 text-teal-700' : 'bg-rose-50 text-rose-700'}`}>
-          {isUp ? `+${factor.impact ?? 0} 助推` : `-${factor.risk ?? 0} 风险`}
-        </span>
+        <ScoreBadge
+          label={isUp ? '助推分' : '风险分'}
+          value={isUp ? `+${factor.impact ?? 0}` : `-${factor.risk ?? 0}`}
+          help={isUp ? '越高越适合保留' : '越高越需要修正'}
+          tone={isUp ? 'boost' : 'risk'}
+        />
       </div>
       <p className="text-xs font-semibold leading-5 text-slate-600">依据：{factor.evidence}</p>
       <p className="mt-2 text-sm leading-6 text-slate-700">{factor.suggestion}</p>
@@ -681,7 +742,12 @@ const SoulmateCard: React.FC<{ lens: AudienceLens }> = ({ lens }) => (
   <article className={`${panelClass} p-4`}>
     <div className="mb-2 flex items-start justify-between gap-3">
       <h3 className="text-sm font-black text-slate-950">{lens.type}</h3>
-      <span className="rounded-md bg-teal-50 px-2 py-1 text-xs font-black text-teal-700">{lens.resonance} 同频</span>
+      <ScoreBadge
+        label="同频分"
+        value={lens.resonance}
+        help="越高越容易接住你"
+        tone="sync"
+      />
     </div>
     <p className="text-sm leading-6 text-slate-700">{lens.why}</p>
     <p className="mt-3 rounded-md bg-slate-50 px-3 py-2 text-xs font-semibold leading-5 text-slate-700">{lens.likelyReply}</p>
@@ -1046,11 +1112,11 @@ const VibeLinePage: React.FC = () => {
             </div>
 
             <div className="wku-hero-copy-row relative z-10 mt-8">
-              <div className="wku-hero-copy max-w-[1240px]">
-                <h1 className="wku-display text-4xl font-black leading-[1.02] text-slate-950 sm:text-5xl lg:text-6xl">
+              <div className="wku-hero-copy max-w-[980px]">
+                <h1 className="wku-display text-4xl font-black leading-[1.02] text-slate-950 sm:text-5xl lg:text-[56px]">
                     WKU soul-kline
                 </h1>
-                <p className="wku-hero-subtitle mt-3 text-2xl font-black leading-tight text-slate-900 sm:text-[34px]">
+                <p className="wku-hero-subtitle mt-3 text-2xl font-black leading-tight text-slate-900 sm:text-[30px]">
                   谁会停下来看你，谁会再次想起你，<span>谁又真正懂你的灵魂？</span>
                 </p>
                 <p className="wku-hero-soul-line mt-3">
@@ -1068,7 +1134,7 @@ const VibeLinePage: React.FC = () => {
               </a>
             </div>
 
-            <div className="wku-hero-map mt-6">
+            <div className="wku-hero-map mt-5">
               <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1080 360" preserveAspectRatio="none" role="img" aria-label="WKU soul-kline 横向连接曲线">
                 <defs>
                   <linearGradient id="wkuHeroStripLine" x1="0" y1="0" x2="1" y2="0">
@@ -1447,9 +1513,14 @@ const VibeLinePage: React.FC = () => {
                       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                         {matchResult.stageAdvice.map((item) => (
                           <article key={item.stage} className={`${panelClass} p-4`}>
-                            <div className="mb-2 flex items-center justify-between">
+                            <div className="mb-2 flex items-start justify-between gap-3">
                               <h3 className="text-sm font-black text-slate-950">{item.stage}</h3>
-                              <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-black text-slate-700">{item.score} 分</span>
+                              <ScoreBadge
+                                label="阶段分"
+                                value={item.score}
+                                help="越高越适合推进"
+                                tone="stage"
+                              />
                             </div>
                             <p className="text-xs leading-5 text-teal-700">{item.highlight}</p>
                             <p className="mt-2 text-xs leading-5 text-rose-700">{item.risk}</p>
