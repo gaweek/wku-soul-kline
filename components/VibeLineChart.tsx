@@ -269,7 +269,12 @@ const LoadingAgentProgress: React.FC<{ agentStatuses?: VibeLineAgentStatusMap }>
             <div key={type} className={`wku-loading-agent-chip is-${item.status}`}>
               <span className="wku-loading-agent-dot" aria-hidden="true" />
               <span className="wku-loading-agent-name">{AGENT_STATUS_LABELS[type] || item.name}</span>
-              <span className="wku-loading-agent-state">{item.elapsed || statusLabel[item.status]}</span>
+              <span className="wku-loading-agent-state">
+                {item.status === 'running' && (
+                  <span className="wku-loading-agent-spinner" aria-hidden="true" />
+                )}
+                {item.elapsed || statusLabel[item.status]}
+              </span>
             </div>
           );
         })}

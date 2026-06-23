@@ -126,8 +126,13 @@ test('loading preview carries the six agent progress beside the chart', () => {
   assert.match(chartSource, /LoadingAgentProgress/);
   assert.match(chartSource, /六个 Agent 实时进度/);
   assert.match(chartSource, /wku-loading-agent-panel/);
+  assert.match(chartSource, /item\.status === 'running' && \(/);
+  assert.match(chartSource, /wku-loading-agent-spinner/);
   assert.match(pageSource, /agentStatuses=\{agentStatuses\}/);
   assert.match(cssSource, /wku-loading-agent-panel/);
+  assert.match(cssSource, /@keyframes wkuAgentSpin/);
+  assert.match(cssSource, /wku-loading-agent-spinner/);
+  assert.match(cssSource, /prefers-reduced-motion: reduce[\s\S]*wku-loading-agent-spinner/);
 });
 
 test('active generation uses preview as the only full agent progress surface', () => {
