@@ -368,34 +368,35 @@ const ModeChoiceCards: React.FC<{
   const activeMode = modeTabs.find((item) => item.value === mode) ?? modeTabs[0];
 
   return (
-    <div className="wku-mode-choice-panel is-compact">
+    <div className="wku-mode-choice-panel is-prominent">
       <div className="wku-mode-choice-head">
         <div>
-          <p className="text-xs font-black text-teal-700">模式切换</p>
-          <h3 className="mt-1 text-base font-black text-slate-950">当前：{activeMode.title}</h3>
+          <p className="text-xs font-black text-teal-700">模式切换 · 支持单人读盘 / 双人共振</p>
+          <h3 className="mt-1 text-lg font-black text-slate-950">这次要分析哪条连接 K 线？</h3>
         </div>
-        <span>支持单人读盘 / 双人共振</span>
+        <span>当前：{activeMode.title}</span>
       </div>
-      <div className="wku-mode-compact-row">
-        <div className="wku-mode-segment" role="tablist" aria-label="模式切换">
-          {modeTabs.map((item) => {
-            const active = mode === item.value;
-            return (
-              <button
-                key={item.value}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => onChange(item.value)}
-                className={`wku-mode-segment-button wku-clickable ${active ? 'is-active' : ''}`}
-              >
+      <div className="wku-mode-switch-grid" role="tablist" aria-label="模式切换">
+        {modeTabs.map((item) => {
+          const active = mode === item.value;
+          return (
+            <button
+              key={item.value}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => onChange(item.value)}
+              className={`wku-mode-switch-card wku-clickable ${active ? 'is-active' : ''}`}
+            >
+              <span className="wku-mode-switch-card-head">
                 <span>{item.value === 'single' ? '单人模式' : '双人模式'}</span>
                 <b>{item.title}</b>
-              </button>
-            );
-          })}
-        </div>
-        <p className="wku-mode-current-copy">{activeMode.body}</p>
+              </span>
+              <span className="wku-mode-switch-card-copy">{item.body}</span>
+              <span className="wku-mode-switch-action">{active ? '正在使用' : '点击切换'}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

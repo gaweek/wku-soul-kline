@@ -45,10 +45,11 @@ test('mode discovery is promoted as two equal analysis choices', () => {
   assert.match(pageSource, /ModeChoiceCards/);
   assert.match(pageSource, /HeroModeSwitch/);
   assert.match(pageSource, /handleHeroModeSelect/);
-  assert.match(pageSource, /wku-mode-segment/);
-  assert.match(pageSource, /wku-mode-compact-row/);
-  assert.match(pageSource, /wku-mode-current-copy/);
+  assert.match(pageSource, /wku-mode-switch-grid/);
+  assert.match(pageSource, /wku-mode-switch-card/);
+  assert.match(pageSource, /wku-mode-switch-action/);
   assert.match(pageSource, /当前：\{activeMode\.title\}/);
+  assert.match(pageSource, /这次要分析哪条连接 K 线/);
   assert.match(pageSource, /模式切换/);
   assert.match(pageSource, /我想分析自己/);
   assert.match(pageSource, /我想分析我和 TA/);
@@ -56,23 +57,23 @@ test('mode discovery is promoted as two equal analysis choices', () => {
   assert.match(pageSource, /双人模式/);
   assert.match(cssSource, /wku-hero-mode-switch/);
   assert.match(cssSource, /wku-mode-choice-panel/);
-  assert.match(cssSource, /wku-mode-choice-panel\.is-compact/);
+  assert.match(cssSource, /wku-mode-choice-panel\.is-prominent/);
 });
 
-test('workbench mode switch stays compact above the main workspace', () => {
+test('workbench mode switch stays visible without becoming a bulky card area', () => {
   assert.equal(pageSource.includes('wku-mode-choice-card'), false);
   assert.equal(pageSource.includes('wku-mode-choice-grid'), false);
   assert.equal(pageSource.includes('wku-choice-action'), false);
-  assert.match(pageSource, /wku-mode-compact-row/);
-  assert.match(cssSource, /grid-template-columns:\s*minmax\(320px,\s*520px\)\s*minmax\(0,\s*1fr\)/);
-  assert.match(cssSource, /min-height:\s*38px/);
+  assert.match(pageSource, /wku-mode-switch-grid/);
+  assert.match(cssSource, /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(cssSource, /min-height:\s*82px/);
 });
 
 test('interactive controls use a shared clickable affordance system', () => {
   assert.match(cssSource, /wku-clickable/);
   assert.match(cssSource, /\.wku-page button:not\(:disabled\)/);
   assert.match(pageSource, /className="wku-hero-cta wku-clickable"/);
-  assert.match(pageSource, /className=\{`wku-mode-segment-button wku-clickable/);
+  assert.match(pageSource, /className=\{`wku-mode-switch-card wku-clickable/);
   assert.match(pageSource, /className="wku-sample-chip wku-clickable"/);
   assert.match(pageSource, /type="button"[\s\S]*className="wku-start-button wku-clickable/);
 });

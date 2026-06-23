@@ -450,19 +450,20 @@
   }
 
   .wku-mode-choice-panel {
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     border: 1px solid rgba(148, 163, 184, 0.28);
-    border-radius: 14px;
+    border-radius: 16px;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(248, 250, 252, 0.58)),
       radial-gradient(circle at 92% 0%, rgba(20, 184, 166, 0.12), transparent 34%);
-    padding: 10px;
+    padding: 14px;
   }
 
-  .wku-mode-choice-panel.is-compact {
+  .wku-mode-choice-panel.is-prominent {
+    border-color: rgba(20, 184, 166, 0.26);
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(248, 250, 252, 0.58)),
-      radial-gradient(circle at 96% 0%, rgba(20, 184, 166, 0.1), transparent 32%);
+      linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.64)),
+      radial-gradient(circle at 96% 0%, rgba(20, 184, 166, 0.14), transparent 34%);
   }
 
   .wku-mode-choice-head {
@@ -487,71 +488,107 @@
     white-space: nowrap;
   }
 
-  .wku-mode-segment {
+  .wku-mode-switch-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
-    border: 1px solid rgba(148, 163, 184, 0.28);
-    border-radius: 12px;
-    background: rgba(241, 245, 249, 0.78);
-    padding: 5px;
+    gap: 12px;
   }
 
-  .wku-mode-compact-row {
+  .wku-mode-switch-card {
+    position: relative;
     display: grid;
-    grid-template-columns: minmax(320px, 520px) minmax(0, 1fr);
-    gap: 10px;
-    align-items: center;
+    min-height: 82px;
+    align-content: center;
+    gap: 7px;
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 14px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(248, 250, 252, 0.64));
+    padding: 14px 98px 14px 16px;
+    color: #334155;
+    text-align: left;
+    transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
   }
 
-  .wku-mode-segment-button {
-    display: flex;
-    min-height: 38px;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    border: 1px solid transparent;
-    border-radius: 9px;
-    color: #475569;
-    font-size: 12px;
-    font-weight: 900;
-    transition: transform 150ms ease, border-color 150ms ease, background 150ms ease, color 150ms ease;
-  }
-
-  .wku-mode-segment-button b {
+  .wku-mode-switch-card:hover,
+  .wku-mode-switch-card:focus-visible {
+    border-color: rgba(20, 184, 166, 0.46);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(236, 254, 255, 0.7));
     color: #0f172a;
-    font-size: 13px;
+    outline: none;
+    transform: translateY(-1px);
+  }
+
+  .wku-mode-switch-card.is-active {
+    border-color: rgba(15, 23, 42, 0.88);
+    background:
+      linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(15, 118, 110, 0.9)),
+      radial-gradient(circle at 86% 0%, rgba(103, 232, 249, 0.25), transparent 42%);
+    color: #ecfeff;
+  }
+
+  .wku-mode-switch-card-head {
+    display: flex;
+    min-width: 0;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .wku-mode-switch-card-head > span {
+    color: #0f766e;
+    font-size: 12px;
     font-weight: 950;
   }
 
-  .wku-mode-segment-button:hover,
-  .wku-mode-segment-button:focus-visible {
-    border-color: rgba(20, 184, 166, 0.32);
-    background: rgba(255, 255, 255, 0.72);
+  .wku-mode-switch-card-head b {
     color: #0f172a;
-    outline: none;
+    font-size: 18px;
+    font-weight: 950;
+    line-height: 1.1;
   }
 
-  .wku-mode-segment-button.is-active {
-    border-color: rgba(15, 23, 42, 0.86);
-    background: #020617;
+  .wku-mode-switch-card-copy {
+    color: #475569;
+    font-size: 13px;
+    font-weight: 850;
+    line-height: 1.45;
+  }
+
+  .wku-mode-switch-action {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    display: inline-flex;
+    min-height: 30px;
+    align-items: center;
+    transform: translateY(-50%);
+    border: 1px solid rgba(20, 184, 166, 0.28);
+    border-radius: 999px;
+    background: rgba(240, 253, 250, 0.78);
+    padding: 0 10px;
+    color: #0f766e;
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .wku-mode-switch-card.is-active .wku-mode-switch-card-head > span,
+  .wku-mode-switch-card.is-active .wku-mode-switch-card-copy {
     color: #ccfbf1;
   }
 
-  .wku-mode-segment-button.is-active b {
+  .wku-mode-switch-card.is-active .wku-mode-switch-card-head b {
     color: #ffffff;
   }
 
-  .wku-mode-current-copy {
-    margin: 0;
-    border: 1px solid rgba(20, 184, 166, 0.2);
-    border-radius: 12px;
-    background: rgba(240, 253, 250, 0.5);
-    padding: 8px 10px;
-    color: #475569;
-    font-size: 12px;
-    font-weight: 850;
-    line-height: 1.5;
+  .wku-mode-switch-card.is-active .wku-mode-switch-action {
+    border-color: rgba(153, 246, 228, 0.28);
+    background: rgba(236, 254, 255, 0.14);
+    color: #ecfeff;
   }
 
   .wku-workbench-body {
@@ -1545,8 +1582,7 @@
     .wku-form-agent-grid,
     .wku-match-form-grid,
     .wku-hero-mode-switch,
-    .wku-mode-compact-row,
-    .wku-mode-segment {
+    .wku-mode-switch-grid {
       grid-template-columns: 1fr;
     }
 
