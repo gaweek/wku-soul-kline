@@ -180,11 +180,21 @@ test('collapsed sidebar exposes three clear icon buttons for home single and mat
 });
 
 test('home view does not highlight workbench mode buttons', () => {
-  assert.match(pageSource, /const workbenchNavActive = activeView === 'workbench' \|\| activeView === 'invite' \|\| activeView === 'share'/);
+  assert.match(pageSource, /const workbenchNavActive = activeView === 'workbench' \|\| activeView === 'invite'/);
   assert.match(pageSource, /workbenchNavActive \? 'is-active' : ''/);
   assert.match(pageSource, /workbenchNavActive && mode === 'single'/);
   assert.match(pageSource, /workbenchNavActive && mode === 'match'/);
   assert.equal(pageSource.includes("wku-side-mode-item wku-clickable ${mode === 'single' ? 'is-active' : ''}"), false);
+});
+
+test('shared recent result highlights the selected record instead of the workbench modes', () => {
+  assert.match(pageSource, /activeRecentHref/);
+  assert.match(pageSource, /normalizeRecentShareHref\(record\.href\) === activeRecentHref/);
+  assert.match(pageSource, /activeRecentHref=\{activeRecentHref\}/);
+  assert.match(pageSource, /wku-recent-run wku-clickable \$\{isRecentActive \? 'is-active' : ''\}/);
+  assert.match(cssSource, /wku-recent-run\.is-active/);
+  assert.match(cssSource, /wku-recent-run\.is-active b/);
+  assert.equal(pageSource.includes("const workbenchNavActive = activeView === 'workbench' || activeView === 'invite' || activeView === 'share'"), false);
 });
 
 test('home keeps the original hero without an embedded mode switch', () => {

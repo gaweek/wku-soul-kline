@@ -2283,6 +2283,13 @@
   transform: translateX(2px);
 }
 
+.wku-recent-run.is-active {
+  border-color: rgba(20, 184, 166, 0.48);
+  background:
+    linear-gradient(180deg, rgba(240, 253, 250, 0.96), rgba(236, 254, 255, 0.7));
+  box-shadow: inset 0 0 0 1px rgba(45, 212, 191, 0.22);
+}
+
 .wku-recent-run b,
 .wku-recent-run span,
 .wku-recent-empty {
@@ -2297,12 +2304,20 @@
   white-space: nowrap;
 }
 
+.wku-recent-run.is-active b {
+  color: #0f766e;
+}
+
 .wku-recent-run span,
 .wku-recent-empty {
   color: #64748b;
   font-size: 11px;
   font-weight: 750;
   line-height: 1.45;
+}
+
+.wku-recent-run.is-active span {
+  color: #0f766e;
 }
 
 .wku-app-content {

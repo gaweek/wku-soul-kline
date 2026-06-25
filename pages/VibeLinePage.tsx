@@ -390,6 +390,7 @@ const getHashPayload = (hash: string, route: 'share' | 'invite') => {
 
 const buildShareHref = (payload: string) => `/#/share/${payload}`;
 const buildInviteHref = (payload: string) => `/#/invite/${payload}`;
+const normalizeRecentShareHref = (href: string) => (href.startsWith('/share/') ? `/#${href}` : href);
 
 const normalizeInviteProfile = (profile: Partial<ProfileFormState> = {}): ProfileFormState => ({
   draft: profile.draft || '',
@@ -1179,6 +1180,7 @@ const WorkbenchShell: React.FC<{
   mode: Mode;
   collapsed: boolean;
   recentRuns: RecentRunRecord[];
+  activeRecentHref: string;
   onToggle: () => void;
   onNavigateHome: () => void;
   onNavigateWorkbench: () => void;
@@ -1190,6 +1192,7 @@ const WorkbenchShell: React.FC<{
   mode,
   collapsed,
   recentRuns,
+  activeRecentHref,
   onToggle,
   onNavigateHome,
   onNavigateWorkbench,
@@ -1197,7 +1200,7 @@ const WorkbenchShell: React.FC<{
   onOpenRecent,
   children,
 }) => {
-  const workbenchNavActive = activeView === 'workbench' || activeView === 'invite' || activeView === 'share';
+  const workbenchNavActive = activeView === 'workbench' || activeView === 'invite';
 
   return (
     <div className={`wku-app-shell ${collapsed ? 'is-collapsed' : ''}`}>
@@ -1288,12 +1291,22 @@ const WorkbenchShell: React.FC<{
           <div className="wku-recent-runs">
             <p>最近生成</p>
             {recentRuns.length ? (
-              recentRuns.map((record) => (
-                <button key={record.id} type="button" className="wku-recent-run wku-clickable" onClick={() => onOpenRecent(record)}>
-                  <b>{record.title}</b>
-                  <span>{record.detail}</span>
-                </button>
-              ))
+              recentRuns.map((record) => {
+                const isRecentActive = normalizeRecentShareHref(record.href) === activeRecentHref;
+
+                return (
+                  <button
+                    key={record.id}
+                    type="button"
+                    className={`wku-recent-run wku-clickable ${isRecentActive ? 'is-active' : ''}`}
+                    onClick={() => onOpenRecent(record)}
+                    aria-current={isRecentActive ? 'page' : undefined}
+                  >
+                    <b>{record.title}</b>
+                    <span>{record.detail}</span>
+                  </button>
+                );
+              })
             ) : (
               <span className="wku-recent-empty">生成后会记录最近 5 次结果</span>
             )}
@@ -1538,15 +1551,17 @@ const VibeLinePage: React.FC = () => {
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const hashSharePayload = useMemo(() => getHashPayload(hashRoute, 'share'), [hashRoute]);
   const hashInvitePayload = useMemo(() => getHashPayload(hashRoute, 'invite'), [hashRoute]);
+  const activeSharePayload = sharePayload || hashSharePayload || searchParams.get('wkuShare') || '';
   const sharedPayload = useMemo(
-    () => decodeSharePayload(sharePayload || hashSharePayload || searchParams.get('wkuShare')),
-    [sharePayload, hashSharePayload, searchParams]
+    () => decodeSharePayload(activeSharePayload),
+    [activeSharePayload]
   );
   const routeInvitePayload = invitePayload || hashInvitePayload || searchParams.get('wkuInvite');
   const isWorkbenchRoute = location.pathname === '/workbench' || location.pathname === '/vibeline' || location.pathname === '/soul-kline';
   const activeView: AppView = sharedPayload ? 'share' : routeInvitePayload ? 'invite' : isWorkbenchRoute ? 'workbench' : 'home';
   const isHomeView = activeView === 'home';
   const inviteView = activeView === 'invite';
+  const activeRecentHref = activeView === 'share' && activeSharePayload ? buildShareHref(activeSharePayload) : '';
 
   const singleInput = useMemo(() => profileToInput(singleProfile), [singleProfile]);
   const canSubmit = singleInput.draft.trim().length >= 12 && !loading;
@@ -1936,6 +1951,7 @@ const VibeLinePage: React.FC = () => {
         mode={mode}
         collapsed={sidebarCollapsed}
         recentRuns={recentRuns}
+        activeRecentHref={activeRecentHref}
         onToggle={() => setSidebarCollapsed((prev) => !prev)}
         onNavigateHome={openHome}
         onNavigateWorkbench={() => openWorkbench(mode)}
