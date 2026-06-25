@@ -728,6 +728,19 @@
     padding: 16px;
   }
 
+  .wku-required-hint {
+    margin: 0 16px 14px;
+    border: 1px solid rgba(245, 158, 11, 0.32);
+    border-radius: 12px;
+    background:
+      linear-gradient(180deg, rgba(255, 251, 235, 0.9), rgba(255, 255, 255, 0.82));
+    padding: 10px 12px;
+    color: #92400e;
+    font-size: 12px;
+    font-weight: 900;
+    line-height: 1.55;
+  }
+
   .wku-form-agent-grid,
   .wku-single-form-shell {
     display: grid;
@@ -1795,6 +1808,10 @@
       width: 100%;
     }
 
+    .wku-new-soul-action {
+      grid-template-columns: 1fr;
+    }
+
     .wku-view-result-button,
     .wku-agent-handoff .wku-view-result-button {
       width: 100%;
@@ -2400,6 +2417,39 @@
     radial-gradient(circle at 96% 0%, rgba(34, 211, 238, 0.16), transparent 36%);
   padding: 16px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.wku-new-soul-action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid rgba(20, 184, 166, 0.26);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(240, 253, 250, 0.62)),
+    radial-gradient(circle at 96% 0%, rgba(34, 211, 238, 0.16), transparent 38%);
+  padding: 16px;
+}
+
+.wku-new-soul-action b,
+.wku-new-soul-action p {
+  display: block;
+}
+
+.wku-new-soul-action b {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.wku-new-soul-action p {
+  margin-top: 4px;
+  max-width: 62ch;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.6;
 }
 
 .wku-share-card-body {

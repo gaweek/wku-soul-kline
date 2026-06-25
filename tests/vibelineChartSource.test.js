@@ -237,6 +237,31 @@ test('workbench title owns the input deck heading and the form starts immediatel
   assert.match(cssSource, /wku-input-deck\s*\{[\s\S]*padding:\s*0/);
 });
 
+test('workbench keeps the generate action visible after results are created', () => {
+  assert.equal(pageSource.includes('const showRunCard = !activeLoading && !activeResultReady'), false);
+  assert.match(pageSource, /const showRunCard = !activeLoading/);
+  assert.match(pageSource, /activeResultReady \? '可以修改样本后重新生成 soul-kline。' : '样本准备好后点击生成 soul-kline/);
+  assert.match(pageSource, /重新生成 soul-kline/);
+  assert.match(cssSource, /wku-form-run-card/);
+});
+
+test('new soul-kline flow clears required fields and returns users to the top form', () => {
+  assert.match(pageSource, /EMPTY_PROFILE/);
+  assert.match(pageSource, /PROFILE_REQUIRED_FIELDS/);
+  assert.match(pageSource, /getMissingRequiredProfileFields/);
+  assert.match(pageSource, /const canSubmit = getMissingRequiredProfileFields\(singleProfile\)\.length === 0 && !loading/);
+  assert.match(pageSource, /const singleMissingRequiredText = getMissingRequiredProfileFields\(singleProfile\)\.join\('、'\)/);
+  assert.match(pageSource, /startFreshSoulKline/);
+  assert.match(pageSource, /setSingleProfile\(EMPTY_PROFILE\)/);
+  assert.match(pageSource, /setResult\(null\)/);
+  assert.match(pageSource, /setSingleProgress\('请重新填写必填项后生成新的 WKU soul-kline'\)/);
+  assert.match(pageSource, /goCreateNewSoulKline/);
+  assert.match(pageSource, /去生成新的 soul-kline/);
+  assert.match(pageSource, /请重新填写：\{singleMissingRequiredText\}/);
+  assert.match(cssSource, /wku-required-hint/);
+  assert.match(cssSource, /wku-new-soul-action/);
+});
+
 test('sidebar active states use the dark rendered mode card treatment', () => {
   assert.match(cssSource, /wku-side-nav-item:hover/);
   assert.match(cssSource, /wku-side-mode-item:hover/);

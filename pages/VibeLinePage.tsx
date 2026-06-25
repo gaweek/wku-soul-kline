@@ -109,6 +109,32 @@ interface ProfileFormState {
   socialProblem: string;
 }
 
+const EMPTY_PROFILE: ProfileFormState = {
+  draft: '',
+  birthday: '',
+  gender: '',
+  mbti: '',
+  sbti: '',
+  interestText: '',
+  mood: '',
+  socialProblem: '',
+};
+
+const PROFILE_REQUIRED_FIELDS: Array<{ key: keyof ProfileFormState; label: string }> = [
+  { key: 'birthday', label: '生日' },
+  { key: 'gender', label: '性别' },
+  { key: 'draft', label: '自我介绍 / 常发动态' },
+  { key: 'mood', label: '当前社交状态' },
+  { key: 'interestText', label: '个人兴趣' },
+  { key: 'mbti', label: 'MBTI' },
+];
+
+const getMissingRequiredProfileFields = (profile: ProfileFormState) => (
+  PROFILE_REQUIRED_FIELDS
+    .filter((field) => !profile[field.key].trim())
+    .map((field) => field.label)
+);
+
 const MBTI_OPTIONS = [
   '',
   'INTJ',
@@ -1573,6 +1599,19 @@ const ResultPreviewPanel: React.FC<{ mode: Mode }> = ({ mode }) => {
   );
 };
 
+const NewSoulKLineAction: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+  <div className="wku-new-soul-action">
+    <div>
+      <b>想重新生成一条新的读盘？</b>
+      <p>会清空当前样本和结果，回到输入台重新填写必填项。</p>
+    </div>
+    <button type="button" className="wku-start-button wku-clickable" onClick={onClick}>
+      <Sparkles className="h-4 w-4" />
+      去生成新的 soul-kline
+    </button>
+  </div>
+);
+
 const VibeLinePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -1619,8 +1658,19 @@ const VibeLinePage: React.FC = () => {
     : '';
 
   const singleInput = useMemo(() => profileToInput(singleProfile), [singleProfile]);
-  const canSubmit = singleInput.draft.trim().length >= 12 && !loading;
-  const canMatch = personA.draft.trim().length >= 12 && personB.draft.trim().length >= 12 && !matchLoading;
+  const canSubmit = getMissingRequiredProfileFields(singleProfile).length === 0 && !loading;
+  const canMatch = (
+    getMissingRequiredProfileFields(personA).length === 0
+    && getMissingRequiredProfileFields(personB).length === 0
+    && !matchLoading
+  );
+  const singleMissingRequiredText = getMissingRequiredProfileFields(singleProfile).join('、');
+  const personAMissingRequiredText = getMissingRequiredProfileFields(personA).join('、');
+  const personBMissingRequiredText = getMissingRequiredProfileFields(personB).join('、');
+  const matchMissingRequiredText = [
+    personAMissingRequiredText ? `${inviteView ? 'Ta' : '你'}：${personAMissingRequiredText}` : '',
+    personBMissingRequiredText ? `${inviteView ? '你' : 'TA'}：${personBMissingRequiredText}` : '',
+  ].filter(Boolean).join('；');
   const activeAgentStatuses = mode === 'single' ? singleAgentStatuses : matchAgentStatuses;
   const activeProgress = mode === 'single' ? singleProgress : matchProgress;
   const activeCompletedCount = Object.values(activeAgentStatuses).filter((item) => item.status === 'completed').length;
@@ -1650,7 +1700,7 @@ const VibeLinePage: React.FC = () => {
     ? `${singleProfile.draft}${singleProfile.interestText}`
     : `${personA.draft}${personB.draft}${relationshipGoal}`;
   const activeGenerationEstimate = `${getConcreteEstimateSeconds(mode, estimateSeed)}s`;
-  const showRunCard = !activeLoading && !activeResultReady;
+  const showRunCard = !activeLoading;
   const inviteLink = useMemo(() => {
     if (typeof window === 'undefined') return '';
 
@@ -1728,6 +1778,17 @@ const VibeLinePage: React.FC = () => {
     requestAnimationFrame(performGenerationPreviewScroll);
   };
 
+  const scrollToWorkbenchTop = () => {
+    window.requestAnimationFrame(() => {
+      const target = pageRef.current?.querySelector<HTMLElement>('.wku-workbench-page');
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  };
+
   const handleModeChange = (nextMode: Mode) => {
     setMode(nextMode);
     setScrollIntent(null);
@@ -1780,6 +1841,28 @@ const VibeLinePage: React.FC = () => {
     navigate(nextPath);
     window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
   };
+
+  const startFreshSoulKline = () => {
+    clearHashRoute();
+    navigate('/workbench');
+    setMode('single');
+    setSingleProfile(EMPTY_PROFILE);
+    setPersonA(EMPTY_PROFILE);
+    setPersonB(EMPTY_PROFILE);
+    setRelationshipGoal('');
+    setResult(null);
+    setMatchResult(null);
+    setError('');
+    setMatchError('');
+    setScrollIntent(null);
+    setSingleAgentStatuses(createInitialVibeLineAgentStatuses());
+    setMatchAgentStatuses(createInitialVibeLineAgentStatuses());
+    setSingleProgress('请重新填写必填项后生成新的 WKU soul-kline');
+    setMatchProgress('等待生成你们的 Who Know Us');
+    scrollToWorkbenchTop();
+  };
+
+  const goCreateNewSoulKline = () => startFreshSoulKline();
 
   const saveRecentRun = (record: RecentRunRecord) => {
     setRecentRuns((prev) => {
@@ -1859,7 +1942,13 @@ const VibeLinePage: React.FC = () => {
   }, { scope: pageRef, dependencies: [mode] });
 
   const runAnalyze = async () => {
-    if (!canSubmit) return;
+    const missingFields = getMissingRequiredProfileFields(singleProfile);
+    if (missingFields.length > 0) {
+      setError(`请先补全必填项：${missingFields.join('、')}`);
+      scrollToWorkbenchTop();
+      return;
+    }
+    if (loading) return;
     setLoading(true);
     setError('');
     setResult(null);
@@ -1919,7 +2008,17 @@ const VibeLinePage: React.FC = () => {
   };
 
   const runMatch = async () => {
-    if (!canMatch) return;
+    const personAMissing = getMissingRequiredProfileFields(personA);
+    const personBMissing = getMissingRequiredProfileFields(personB);
+    if (personAMissing.length > 0 || personBMissing.length > 0) {
+      setMatchError(`请先补全必填项：${[
+        personAMissing.length > 0 ? `${inviteView ? 'Ta' : '你'}：${personAMissing.join('、')}` : '',
+        personBMissing.length > 0 ? `${inviteView ? '你' : 'TA'}：${personBMissing.join('、')}` : '',
+      ].filter(Boolean).join('；')}`);
+      scrollToWorkbenchTop();
+      return;
+    }
+    if (matchLoading) return;
     setMatchLoading(true);
     setMatchError('');
     setMatchResult(null);
@@ -2007,7 +2106,7 @@ const VibeLinePage: React.FC = () => {
             shareLink={activeShareLink}
             copied={copiedId === 'shared-result-link'}
             onCopyShare={() => copyText('shared-result-link', activeShareLink)}
-            onStartOwn={() => openWorkbench('single')}
+            onStartOwn={goCreateNewSoulKline}
           />
         </main>
       ) : (
@@ -2187,6 +2286,18 @@ const VibeLinePage: React.FC = () => {
                   )}
                 </div>
 
+                {mode === 'single' && singleMissingRequiredText && (
+                  <div className="wku-required-hint" role="status">
+                    请重新填写：{singleMissingRequiredText}
+                  </div>
+                )}
+
+                {mode === 'match' && matchMissingRequiredText && (
+                  <div className="wku-required-hint" role="status">
+                    请补全双人样本：{matchMissingRequiredText}
+                  </div>
+                )}
+
                 {activeError && (
                   <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
                     {activeError}
@@ -2198,7 +2309,7 @@ const VibeLinePage: React.FC = () => {
                     <div className="min-w-0">
                       <p className="text-sm font-black text-slate-950">{activeActionLabel}</p>
                       <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
-                        样本准备好后点击生成 soul-kline，系统会先读懂样本，再进入读盘。
+                        {activeResultReady ? '可以修改样本后重新生成 soul-kline。' : '样本准备好后点击生成 soul-kline，系统会先读懂样本，再进入读盘。'}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -2352,6 +2463,8 @@ const VibeLinePage: React.FC = () => {
                         </div>
                       </div>
                     </div>
+
+                    <NewSoulKLineAction onClick={goCreateNewSoulKline} />
                     </>
                   ) : <ResultPreviewPanel mode="single" />
                 )}
@@ -2467,6 +2580,8 @@ const VibeLinePage: React.FC = () => {
                       </div>
                       <p className="mt-3 text-xs font-semibold leading-5 text-slate-600">{matchResult.safety.note}</p>
                     </div>
+
+                    <NewSoulKLineAction onClick={goCreateNewSoulKline} />
                     </>
                   ) : <ResultPreviewPanel mode="match" />
                 )}
