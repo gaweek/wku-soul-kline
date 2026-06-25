@@ -1732,17 +1732,67 @@ const ResultPreviewPanel: React.FC<{ mode: Mode }> = ({ mode }) => {
   );
 };
 
-const NewSoulKLineAction: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+const NewSoulKLineAction: React.FC<{
+  onClick: () => void;
+  beforeAction?: React.ReactNode;
+}> = ({ onClick, beforeAction }) => (
   <div className="wku-new-soul-action">
     <div>
       <b>想重新生成一条新的读盘？</b>
       <p>会清空当前样本和结果，回到输入台重新填写必填项。</p>
     </div>
-    <button type="button" className="wku-start-button wku-clickable" onClick={onClick}>
-      <Sparkles className="h-4 w-4" />
-      去生成新的 soul-kline
-    </button>
+    <div className="wku-result-final-buttons">
+      {beforeAction}
+      <button type="button" className="wku-start-button wku-clickable" onClick={onClick}>
+        <Sparkles className="h-4 w-4" />
+        去生成新的 soul-kline
+      </button>
+    </div>
   </div>
+);
+
+const SingleResultFinalActions: React.FC<{
+  result: VibeLineResult;
+  shareLink: string;
+  copied: boolean;
+  onCopyShare: () => void;
+  onOpenShare: () => void;
+  onStartMatch: () => void;
+  onCreateNew: () => void;
+}> = ({
+  result,
+  shareLink,
+  copied,
+  onCopyShare,
+  onOpenShare,
+  onStartMatch,
+  onCreateNew,
+}) => (
+  <section className="wku-result-final-actions">
+    <ShareResultCard
+      title="我的 Who Know U 连接读盘"
+      eyebrow={result.marketType}
+      summary={result.summary}
+      badges={[
+        `连接分 ${result.kline[result.kline.length - 1]?.close ?? '-'}/100`,
+        result.input.zodiac || '兴趣社交',
+        result.input.mbti || '表达样本',
+      ]}
+      shareLink={shareLink}
+      copied={copied}
+      onCopy={onCopyShare}
+      onOpen={onOpenShare}
+    />
+    <NewSoulKLineAction
+      onClick={onCreateNew}
+      beforeAction={(
+        <button type="button" onClick={onStartMatch} className="wku-view-result-button wku-clickable">
+          <Users className="h-4 w-4" />
+          生成我和 TA
+        </button>
+      )}
+    />
+  </section>
 );
 
 const VibeLinePage: React.FC = () => {
@@ -2632,26 +2682,7 @@ const VibeLinePage: React.FC = () => {
                         )}
                       </div>
                       <p className="text-base leading-8 text-slate-700">{result.summary}</p>
-                      <button type="button" onClick={startMatchFromSingle} className="wku-view-result-button wku-clickable mt-4">
-                        去看我和 TA
-                        <Users className="h-4 w-4" />
-                      </button>
                     </div>
-
-                    <ShareResultCard
-                      title="我的 Who Know U 连接读盘"
-                      eyebrow={result.marketType}
-                      summary={result.summary}
-                      badges={[
-                        `连接分 ${result.kline[result.kline.length - 1]?.close ?? '-'}/100`,
-                        result.input.zodiac || '兴趣社交',
-                        result.input.mbti || '表达样本',
-                      ]}
-                      shareLink={singleShareLink}
-                      copied={copiedId === 'single-result-share'}
-                      onCopy={() => copyText('single-result-share', singleShareLink)}
-                      onOpen={openSharePage}
-                    />
 
                     <div className="grid gap-4 xl:grid-cols-2">
                       <div className={`${panelClass} p-4`}>
@@ -2720,7 +2751,15 @@ const VibeLinePage: React.FC = () => {
                       </div>
                     </div>
 
-                    <NewSoulKLineAction onClick={goCreateNewSoulKline} />
+                    <SingleResultFinalActions
+                      result={result}
+                      shareLink={singleShareLink}
+                      copied={copiedId === 'single-result-share'}
+                      onCopyShare={() => copyText('single-result-share', singleShareLink)}
+                      onOpenShare={openSharePage}
+                      onStartMatch={startMatchFromSingle}
+                      onCreateNew={goCreateNewSoulKline}
+                    />
                     </>
                   ) : <ResultPreviewPanel mode="single" />
                 )}

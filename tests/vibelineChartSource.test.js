@@ -288,6 +288,26 @@ test('new soul-kline flow clears required fields and returns users to the top fo
   assert.match(cssSource, /wku-new-soul-action/);
 });
 
+test('single result puts share card and next actions in the bottom action deck', () => {
+  const summaryCopy = pageSource.indexOf('<p className="text-base leading-8 text-slate-700">{result.summary}</p>');
+  const bottomActionDeck = pageSource.indexOf('<SingleResultFinalActions');
+  const componentStart = pageSource.indexOf('const SingleResultFinalActions');
+  const componentEnd = pageSource.indexOf('const VibeLinePage', componentStart);
+  const componentSource = pageSource.slice(componentStart, componentEnd);
+
+  assert.ok(summaryCopy > -1, 'single result summary should still render near the top of results');
+  assert.ok(bottomActionDeck > summaryCopy, 'bottom action deck should render after result content');
+  assert.match(componentSource, /<ShareResultCard/);
+  assert.match(componentSource, /title="我的 Who Know U 连接读盘"/);
+  assert.match(pageSource, /const SingleResultFinalActions/);
+  assert.match(pageSource, /onStartMatch=\{startMatchFromSingle\}/);
+  assert.match(pageSource, /生成我和 TA/);
+  assert.match(pageSource, /去生成新的 soul-kline/);
+  assert.match(cssSource, /wku-result-final-actions/);
+  assert.match(cssSource, /wku-result-final-buttons/);
+  assert.equal(pageSource.includes('onClick={startMatchFromSingle} className="wku-view-result-button wku-clickable mt-4"'), false);
+});
+
 test('sidebar active states use the dark rendered mode card treatment', () => {
   assert.match(cssSource, /wku-side-nav-item:hover/);
   assert.match(cssSource, /wku-side-mode-item:hover/);
