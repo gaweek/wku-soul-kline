@@ -47,6 +47,34 @@ test('createShareRecord stores a result behind a short share id', async () => {
   }
 });
 
+test('createShareRecord can store a two-person invite payload behind a short id', async () => {
+  const store = await createTempStore();
+  const invitePayload = {
+    personA: {
+      draft: '我已经填好的社交样本',
+      birthday: '2001-11-08',
+      gender: '暂不透露',
+      mbti: 'INFP',
+      sbti: '夜聊搭子',
+      interestText: '独立音乐、电影',
+      mood: '想认识能慢慢聊起来的同频朋友',
+      socialProblem: '',
+    },
+    relationshipGoal: '想知道我们从哪里更容易自然靠近',
+    createdAt: '2026-06-26T00:00:00.000Z',
+  };
+
+  try {
+    const record = await createShareRecord(invitePayload, { storeFile: store.storeFile });
+    const loaded = await getShareRecord(record.id, { storeFile: store.storeFile });
+
+    assert.match(record.id, /^[A-Za-z0-9_-]{8,}$/);
+    assert.deepEqual(loaded?.payload, invitePayload);
+  } finally {
+    await store.cleanup();
+  }
+});
+
 test('share store rejects oversized payloads instead of growing without bound', async () => {
   const store = await createTempStore();
 

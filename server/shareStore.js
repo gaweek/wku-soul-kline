@@ -18,6 +18,11 @@ const getStoreFile = (options = {}) => options.storeFile || DEFAULT_STORE_FILE;
 
 const measurePayloadBytes = (payload) => Buffer.byteLength(JSON.stringify(payload), 'utf8');
 
+const isSupportedPayload = (payload) => (
+  Boolean(payload?.result && typeof payload.result === 'object')
+  || Boolean(payload?.personA && typeof payload.personA === 'object')
+);
+
 const normalizeRecords = (value) => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
 
@@ -67,7 +72,7 @@ export const pruneShareRecords = (records, now = Date.now()) => {
 const createShareId = () => randomBytes(8).toString('base64url');
 
 export const createShareRecord = async (payload, options = {}) => {
-  if (!payload?.result || typeof payload.result !== 'object') {
+  if (!isSupportedPayload(payload)) {
     throw new Error('Share payload is invalid');
   }
 

@@ -411,7 +411,7 @@ const decodeUrlPayload = <T,>(value: string | null): T | null => {
   }
 };
 
-const getHashPayload = (hash: string, route: 'share' | 'invite' | 's') => {
+const getHashPayload = (hash: string, route: 'share' | 'invite' | 's' | 'i') => {
   const prefix = `#/${route}/`;
   if (!hash.startsWith(prefix)) return null;
   return hash.slice(prefix.length) || null;
@@ -420,6 +420,7 @@ const getHashPayload = (hash: string, route: 'share' | 'invite' | 's') => {
 const buildShareHref = (payload: string) => `/#/share/${payload}`;
 const buildShortShareHref = (id: string) => `/#/s/${id}`;
 const buildInviteHref = (payload: string) => `/#/invite/${payload}`;
+const buildShortInviteHref = (id: string) => `/#/i/${id}`;
 const normalizeRecentShareHref = (href: string) => {
   let localHref = href;
 
@@ -529,7 +530,7 @@ const decodeSharePayload = (value: string | null): SharePayload | null => {
   };
 };
 
-const createShortShareLink = async (payload: SharePayload) => {
+const createShortStoredLink = async (payload: SharePayload | InvitePayload) => {
   const response = await fetch('/api/share', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -545,7 +546,21 @@ const createShortShareLink = async (payload: SharePayload) => {
     throw new Error('分享链接返回异常');
   }
 
+  return data;
+};
+
+const createShortShareLink = async (payload: SharePayload) => {
+  const data = await createShortStoredLink(payload);
   return data.href || buildShortShareHref(data.id || '');
+};
+
+const createShortInviteLink = async (payload: InvitePayload) => {
+  const data = await createShortStoredLink(payload);
+  if (!data.id) {
+    throw new Error('邀请链接返回异常');
+  }
+
+  return buildShortInviteHref(data.id);
 };
 
 const fetchShortSharePayload = async (id: string) => {
@@ -563,9 +578,33 @@ const fetchShortSharePayload = async (id: string) => {
   return data.payload;
 };
 
+const fetchShortInvitePayload = async (id: string) => {
+  const response = await fetch(`/api/share/${encodeURIComponent(id)}`);
+
+  if (!response.ok) {
+    throw new Error('邀请链接已失效或暂时无法读取');
+  }
+
+  const data = await response.json() as { payload?: Partial<InvitePayload> };
+  if (!data.payload?.personA?.draft) {
+    throw new Error('邀请内容格式异常');
+  }
+
+  return {
+    personA: normalizeInviteProfile(data.payload.personA),
+    relationshipGoal: data.payload.relationshipGoal || '想知道我们从哪里更容易自然靠近，以及哪里容易错频',
+    createdAt: data.payload.createdAt || '',
+  };
+};
+
 const buildLegacyShareHref = (payload: SharePayload) => {
   const shareToken = encodeSharePayload(payload);
   return shareToken ? buildShareHref(shareToken) : '';
+};
+
+const buildLegacyInviteHref = (payload: InvitePayload) => {
+  const inviteToken = encodeInvitePayload(payload);
+  return inviteToken ? buildInviteHref(inviteToken) : '';
 };
 
 const getRecentRuns = (): RecentRunRecord[] => {
@@ -1188,11 +1227,11 @@ const ShareResultCard: React.FC<{
 
 const InviteLinkPanel: React.FC<{
   personA: ProfileFormState;
-  inviteLink: string;
   copied: boolean;
+  pending: boolean;
   onCopy: () => void;
   inviteView?: boolean;
-}> = ({ personA, inviteLink, copied, onCopy, inviteView }) => {
+}> = ({ personA, copied, pending, onCopy, inviteView }) => {
   const personAReady = personA.draft.trim().length >= 12;
 
   return (
@@ -1212,11 +1251,11 @@ const InviteLinkPanel: React.FC<{
         <button
           type="button"
           onClick={onCopy}
-          disabled={!inviteLink || !personAReady}
+          disabled={!personAReady || pending}
           className="wku-view-result-button wku-clickable"
         >
-          {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-          复制邀请链接
+          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {pending ? '生成链接中' : '复制邀请链接'}
         </button>
       </div>
     </section>
@@ -1229,10 +1268,11 @@ const WorkbenchActionsPanel: React.FC<{
   personA: ProfileFormState;
   personB: ProfileFormState;
   shareLink: string;
-  inviteLink: string;
+  inviteLinkPending: boolean;
   copiedId: string;
   inviteView: boolean;
   onCopyText: (id: string, text: string) => void;
+  onCopyInvite: () => void;
   onOpenShare: () => void;
 }> = ({
   mode,
@@ -1240,10 +1280,11 @@ const WorkbenchActionsPanel: React.FC<{
   personA,
   personB,
   shareLink,
-  inviteLink,
+  inviteLinkPending,
   copiedId,
   inviteView,
   onCopyText,
+  onCopyInvite,
   onOpenShare,
 }) => (
   <div className="wku-workbench-actions">
@@ -1277,10 +1318,10 @@ const WorkbenchActionsPanel: React.FC<{
     ) : (
       <InviteLinkPanel
         personA={personA}
-        inviteLink={inviteLink}
         copied={copiedId === 'match-invite-link'}
+        pending={inviteLinkPending}
         inviteView={inviteView}
-        onCopy={() => onCopyText('match-invite-link', inviteLink)}
+        onCopy={onCopyInvite}
       />
     )}
   </div>
@@ -1731,13 +1772,17 @@ const VibeLinePage: React.FC = () => {
   const [recentRuns, setRecentRuns] = useState<RecentRunRecord[]>(getRecentRuns);
   const [hashRoute, setHashRoute] = useState(() => (typeof window === 'undefined' ? '' : window.location.hash));
   const [singleShareLink, setSingleShareLink] = useState('');
+  const [inviteLinkPending, setInviteLinkPending] = useState(false);
   const [remoteSharePayload, setRemoteSharePayload] = useState<SharePayload | null>(null);
+  const [remoteInvitePayload, setRemoteInvitePayload] = useState<InvitePayload | null>(null);
   const [shareLoadError, setShareLoadError] = useState('');
+  const [inviteLoadError, setInviteLoadError] = useState('');
   const { contextSafe } = useGSAP({ scope: pageRef });
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const hashSharePayload = useMemo(() => getHashPayload(hashRoute, 'share'), [hashRoute]);
   const hashShortShareId = useMemo(() => getHashPayload(hashRoute, 's'), [hashRoute]);
   const hashInvitePayload = useMemo(() => getHashPayload(hashRoute, 'invite'), [hashRoute]);
+  const hashShortInviteId = useMemo(() => getHashPayload(hashRoute, 'i'), [hashRoute]);
   const activeSharePayload = sharePayload || hashSharePayload || searchParams.get('wkuShare') || '';
   const legacySharedPayload = useMemo(
     () => decodeSharePayload(activeSharePayload),
@@ -1745,9 +1790,21 @@ const VibeLinePage: React.FC = () => {
   );
   const activeShortShareId = hashShortShareId || searchParams.get('wkuShareId') || '';
   const sharedPayload = remoteSharePayload || legacySharedPayload;
-  const routeInvitePayload = invitePayload || hashInvitePayload || searchParams.get('wkuInvite');
+  const legacyInvitePayloadValue = invitePayload || hashInvitePayload || searchParams.get('wkuInvite') || '';
+  const legacyInvitePayload = useMemo(
+    () => decodeInvitePayload(legacyInvitePayloadValue),
+    [legacyInvitePayloadValue]
+  );
+  const activeShortInviteId = hashShortInviteId || searchParams.get('wkuInviteId') || '';
+  const activeInvitePayload = remoteInvitePayload || legacyInvitePayload;
   const isWorkbenchRoute = location.pathname === '/workbench' || location.pathname === '/vibeline' || location.pathname === '/soul-kline';
-  const activeView: AppView = sharedPayload || activeShortShareId ? 'share' : routeInvitePayload ? 'invite' : isWorkbenchRoute ? 'workbench' : 'home';
+  const activeView: AppView = sharedPayload || activeShortShareId
+    ? 'share'
+    : activeInvitePayload || activeShortInviteId || legacyInvitePayloadValue
+      ? 'invite'
+      : isWorkbenchRoute
+        ? 'workbench'
+        : 'home';
   const isHomeView = activeView === 'home';
   const inviteView = activeView === 'invite';
   const activeShareHref = activeShortShareId
@@ -1790,7 +1847,7 @@ const VibeLinePage: React.FC = () => {
       };
   const activeLoading = mode === 'single' ? loading : matchLoading;
   const activeCanRun = mode === 'single' ? canSubmit : canMatch;
-  const activeError = mode === 'single' ? error : matchError;
+  const activeError = mode === 'single' ? error : matchError || inviteLoadError;
   const activeActionLabel = mode === 'single' ? 'soul-kline生成' : 'Who Know Us 共振生成';
   const activeInputTitle = mode === 'single' ? '生成我的 Who Know U' : '生成我和 TA 的 Who Know Us';
   const activeActionHint = mode === 'single'
@@ -1804,19 +1861,6 @@ const VibeLinePage: React.FC = () => {
     : `${personA.draft}${personB.draft}${relationshipGoal}`;
   const activeGenerationEstimate = `${getConcreteEstimateSeconds(mode, estimateSeed)}s`;
   const showRunCard = !activeLoading;
-  const inviteLink = useMemo(() => {
-    if (typeof window === 'undefined') return '';
-
-    const payload = encodeInvitePayload({
-      personA,
-      relationshipGoal,
-      createdAt: new Date().toISOString(),
-    });
-    if (!payload) return '';
-
-    return `${window.location.origin}${buildInviteHref(payload)}`;
-  }, [personA, relationshipGoal]);
-
   const performGenerationPreviewScroll = contextSafe(() => {
     const target = resultSectionRef.current?.querySelector<HTMLElement>('.wku-chart-card, .wku-chart-loading-card')
       || resultSectionRef.current;
@@ -1925,15 +1969,49 @@ const VibeLinePage: React.FC = () => {
   }, [activeShortShareId]);
 
   useEffect(() => {
-    const invitePayload = decodeInvitePayload(routeInvitePayload);
-    if (!invitePayload) return;
+    let cancelled = false;
+
+    if (!activeShortInviteId) {
+      setRemoteInvitePayload(null);
+      setInviteLoadError('');
+      return undefined;
+    }
 
     setMode('match');
-    setPersonA(invitePayload.personA);
+    setPersonA(EMPTY_PROFILE);
     setPersonB(normalizeInviteProfile());
-    setRelationshipGoal(invitePayload.relationshipGoal);
+    setMatchProgress('正在读取 Ta 的邀请信息');
+    setMatchError('');
+    setRemoteInvitePayload(null);
+    setInviteLoadError('');
+
+    void fetchShortInvitePayload(activeShortInviteId)
+      .then((payload) => {
+        if (!cancelled) setRemoteInvitePayload(payload);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : '邀请链接已失效或暂时无法读取';
+          setInviteLoadError(message);
+          setMatchError(message);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeShortInviteId]);
+
+  useEffect(() => {
+    if (!activeInvitePayload) return;
+
+    setMode('match');
+    setPersonA(activeInvitePayload.personA);
+    setPersonB(normalizeInviteProfile());
+    setRelationshipGoal(activeInvitePayload.relationshipGoal);
     setMatchProgress('Ta 的信息已经填好，等待你填写自己的社交样本');
-  }, [routeInvitePayload]);
+    setMatchError('');
+  }, [activeInvitePayload]);
 
   const clearHashRoute = () => {
     if (typeof window !== 'undefined' && window.location.hash) {
@@ -1982,6 +2060,8 @@ const VibeLinePage: React.FC = () => {
     setResult(null);
     setMatchResult(null);
     setSingleShareLink('');
+    setInviteLinkPending(false);
+    setRemoteInvitePayload(null);
     setError('');
     setMatchError('');
     setScrollIntent(null);
@@ -2040,6 +2120,34 @@ const VibeLinePage: React.FC = () => {
       href: shareHref || '/',
       createdAt: finalResult.meta.generatedAt,
     });
+  };
+
+  const publishInviteLink = async () => {
+    const payload: InvitePayload = {
+      personA,
+      relationshipGoal,
+      createdAt: new Date().toISOString(),
+    };
+    const fallbackHref = buildLegacyInviteHref(payload);
+    let inviteHref = fallbackHref;
+
+    try {
+      inviteHref = await createShortInviteLink(payload);
+    } catch {
+      inviteHref = fallbackHref;
+    }
+
+    const absoluteLink = inviteHref ? getAbsoluteShareLink(inviteHref) : '';
+    return absoluteLink;
+  };
+
+  const copyInviteLink = () => {
+    if (personA.draft.trim().length < 12 || inviteLinkPending) return;
+
+    setInviteLinkPending(true);
+    void publishInviteLink()
+      .then((link) => copyText('match-invite-link', link))
+      .finally(() => setInviteLinkPending(false));
   };
 
   const handleHeroModeSelect = (nextMode: Mode) => {
@@ -2381,10 +2489,11 @@ const VibeLinePage: React.FC = () => {
                   personA={personA}
                   personB={personB}
                   shareLink={singleShareLink}
-                  inviteLink={inviteLink}
+                  inviteLinkPending={inviteLinkPending}
                   copiedId={copiedId}
                   inviteView={inviteView}
                   onCopyText={copyText}
+                  onCopyInvite={copyInviteLink}
                   onOpenShare={openSharePage}
                 />
               </aside>
