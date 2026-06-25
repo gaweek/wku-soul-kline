@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
@@ -6,8 +7,11 @@ import {
   AlertCircle,
   ArrowDown,
   CheckCircle2,
+  ChevronLeft,
   Copy,
   Loader2,
+  PanelLeftClose,
+  PanelLeftOpen,
   ShieldCheck,
   Sparkles,
   TrendingDown,
@@ -306,6 +310,172 @@ const getGenerationScrollMessage = (mode: Mode) => (
     ? '正在生成 Who Know U 预览盘，已为你滑到读盘位置。'
     : '正在生成 Who Know Us 共振预览盘，已为你滑到读盘位置。'
 );
+
+const AI_MODEL_LABEL = 'DeepSeek';
+
+const GENERATION_ESTIMATE_RANGES: Record<Mode, [number, number]> = {
+  single: [18, 24],
+  match: [24, 32],
+};
+
+const GENERATION_SCROLL_DURATION = 0.32;
+const EXPERIENCE_SCROLL_DURATION = 0.34;
+const RECENT_RUNS_STORAGE_KEY = 'wkuRecentRuns';
+
+type AppView = 'workbench' | 'share' | 'invite';
+
+interface InvitePayload {
+  personA: ProfileFormState;
+  relationshipGoal: string;
+  createdAt: string;
+}
+
+interface SharePayload {
+  result: VibeLineResult;
+  createdAt: string;
+}
+
+interface RecentRunRecord {
+  id: string;
+  type: Mode;
+  title: string;
+  detail: string;
+  href: string;
+  createdAt: string;
+}
+
+const getConcreteEstimateSeconds = (mode: Mode, seed = '') => {
+  const [min, max] = GENERATION_ESTIMATE_RANGES[mode];
+  const span = max - min + 1;
+  const hash = Array.from(seed || mode).reduce((total, char) => total + char.charCodeAt(0), 0);
+  return min + (hash % span);
+};
+
+const encodeUrlPayload = (payload: unknown) => {
+  try {
+    return window.btoa(encodeURIComponent(JSON.stringify(payload)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/g, '');
+  } catch {
+    return '';
+  }
+};
+
+const decodeUrlPayload = <T,>(value: string | null): T | null => {
+  if (!value) return null;
+
+  try {
+    const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+    return JSON.parse(decodeURIComponent(window.atob(padded))) as T;
+  } catch {
+    try {
+      return JSON.parse(decodeURIComponent(window.atob(value))) as T;
+    } catch {
+      return null;
+    }
+  }
+};
+
+const getHashPayload = (hash: string, route: 'share' | 'invite') => {
+  const prefix = `#/${route}/`;
+  if (!hash.startsWith(prefix)) return null;
+  return hash.slice(prefix.length) || null;
+};
+
+const buildShareHref = (payload: string) => `/#/share/${payload}`;
+const buildInviteHref = (payload: string) => `/#/invite/${payload}`;
+
+const normalizeInviteProfile = (profile: Partial<ProfileFormState> = {}): ProfileFormState => ({
+  draft: profile.draft || '',
+  birthday: profile.birthday || '',
+  gender: profile.gender || '',
+  mbti: profile.mbti || '',
+  sbti: profile.sbti || '',
+  interestText: profile.interestText || '',
+  mood: profile.mood || '',
+  socialProblem: profile.socialProblem || '',
+});
+
+const encodeInvitePayload = (payload: InvitePayload) => {
+  return encodeUrlPayload(payload);
+};
+
+const decodeInvitePayload = (value: string | null): InvitePayload | null => {
+  const parsed = decodeUrlPayload<Partial<InvitePayload>>(value);
+  if (!parsed?.personA?.draft) return null;
+
+  return {
+    personA: normalizeInviteProfile(parsed.personA),
+    relationshipGoal: parsed.relationshipGoal || '想知道我们从哪里更容易自然靠近，以及哪里容易错频',
+    createdAt: parsed.createdAt || '',
+  };
+};
+
+const encodeSharePayload = (payload: SharePayload) => {
+  return encodeUrlPayload(payload);
+};
+
+const createSharePayload = (result: VibeLineResult): SharePayload => ({
+  result: {
+    ...result,
+    input: {
+      ...result.input,
+      draft: '',
+      socialProblem: '',
+      interests: result.input.interests.slice(0, 6),
+    },
+    kline: result.kline.map((point) => ({
+      ...point,
+      reason: point.reason.length > 80 ? `${point.reason.slice(0, 80)}...` : point.reason,
+    })),
+    variants: [],
+    audienceLenses: [],
+    risingFactors: result.risingFactors.slice(0, 3),
+    fallingFactors: result.fallingFactors.slice(0, 3),
+    soulmateSignals: result.soulmateSignals.slice(0, 3),
+    rebalanceSuggestions: result.rebalanceSuggestions.slice(0, 3),
+    simulatedReplies: [],
+    expressionTips: [],
+  },
+  createdAt: result.meta.generatedAt || new Date().toISOString(),
+});
+
+const decodeSharePayload = (value: string | null): SharePayload | null => {
+  const parsed = decodeUrlPayload<Partial<SharePayload>>(value);
+  if (!parsed?.result?.summary || !Array.isArray(parsed.result.kline)) return null;
+
+  return {
+    result: parsed.result as VibeLineResult,
+    createdAt: parsed.createdAt || parsed.result.meta?.generatedAt || '',
+  };
+};
+
+const getRecentRuns = (): RecentRunRecord[] => {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(RECENT_RUNS_STORAGE_KEY) || '[]') as RecentRunRecord[];
+    return Array.isArray(parsed) ? parsed.slice(0, 5) : [];
+  } catch {
+    return [];
+  }
+};
+
+const buildSingleShareText = (result: VibeLineResult) => [
+  `我的 WKU soul-kline：${result.marketType}`,
+  result.summary,
+  `最容易被懂：${result.soulmateSignals[0]?.type || '等待同频人群'}`,
+  `表达建议：${result.rebalanceSuggestions[0] || result.safety.note}`,
+].join('\n');
+
+const buildMatchShareText = (result: VibeMatchResult) => [
+  `我们的 Who Know Us：${result.marketType}`,
+  `共振分 ${result.matchScore}/100`,
+  result.summary,
+  `第一句话灵感：${result.conversationBridges[0] || '从一个轻松的问题开始'}`,
+].join('\n');
 
 const panelClass = 'wku-panel';
 const labelClass = 'mb-2 block text-[13px] font-bold text-slate-700';
@@ -842,6 +1012,303 @@ const ShareCard: React.FC<{
   </article>
 );
 
+const ShareResultCard: React.FC<{
+  title: string;
+  eyebrow: string;
+  summary: string;
+  badges: string[];
+  shareLink: string;
+  copied: boolean;
+  onCopy: () => void;
+  onOpen?: () => void;
+  copyLabel?: string;
+  openLabel?: string;
+  linkDescription?: string;
+}> = ({
+  title,
+  eyebrow,
+  summary,
+  badges,
+  shareLink,
+  copied,
+  onCopy,
+  onOpen,
+  copyLabel = '复制个人结果链接',
+  openLabel = '打开分享页',
+  linkDescription = '只展示这次 Who Know U 分析结果，不带编辑表单；对方打开后可以点击生成自己的 soul-kline。',
+}) => (
+  <article className="wku-result-share-card">
+    <div className="wku-share-card-body">
+      <div>
+        <p className="text-xs font-black text-teal-700">结果分享卡</p>
+        <h2 className="mt-1 text-lg font-black text-slate-950">{title}</h2>
+      </div>
+      <span>{eyebrow}</span>
+    </div>
+    <p className="mt-3 text-sm leading-6 text-slate-700">{summary}</p>
+    <div className="mt-3 flex flex-wrap gap-2">
+      {badges.map((badge) => (
+        <span key={badge} className="wku-share-card-badge">{badge}</span>
+      ))}
+    </div>
+    <div className="wku-share-card-actions">
+      <div className="wku-share-link-summary" aria-label="个人结果链接说明">
+        <b>{copyLabel.includes('链接') ? '个人结果链接' : '结果摘要'}</b>
+        <p>{linkDescription}</p>
+        <span>{shareLink ? '内容已生成，可复制' : '生成结果后会自动出现'}</span>
+      </div>
+      <button type="button" onClick={onCopy} className="wku-view-result-button wku-clickable">
+        {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+        {copyLabel}
+      </button>
+      {onOpen && (
+        <button type="button" onClick={onOpen} className="wku-view-result-button wku-clickable">
+          {openLabel}
+        </button>
+      )}
+    </div>
+  </article>
+);
+
+const InviteLinkPanel: React.FC<{
+  personA: ProfileFormState;
+  personB: ProfileFormState;
+  inviteLink: string;
+  copied: boolean;
+  onCopy: () => void;
+  inviteView?: boolean;
+}> = ({ personA, personB, inviteLink, copied, onCopy, inviteView }) => {
+  const personAReady = personA.draft.trim().length >= 12;
+  const personBReady = personB.draft.trim().length >= 12;
+
+  return (
+    <section className="wku-invite-panel" aria-label="双人邀请链接">
+      <div className="wku-invite-panel-head">
+        <div>
+          <p className="text-xs font-black text-teal-700">双人邀请链接</p>
+          <h3 className="mt-1 text-base font-black text-slate-950">
+            {inviteView ? 'Ta 的信息已经填好，等待你填写' : '邀请 TA 补全样本'}
+          </h3>
+          <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+            {inviteView
+              ? '你补充自己的社交样本后，就能和 Ta 一起生成 Who Know Us 共振盘。'
+              : '复制邀请链接发给 Ta，对方打开后会进入填写页，只需要补充自己的表达。'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onCopy}
+          disabled={!inviteLink || !personAReady}
+          className="wku-view-result-button wku-clickable"
+        >
+          {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          复制邀请链接
+        </button>
+      </div>
+
+      <div className="wku-invite-seat-grid">
+        <div className={`wku-invite-seat ${personAReady ? 'is-ready' : ''}`}>
+          <span>{inviteView ? 'Ta' : '你'}</span>
+          <b>{personAReady ? (inviteView ? '信息已填好' : '样本已接入') : '先填写样本'}</b>
+          <small>{personA.mood || personA.interestText || '等待生成共同体验入口'}</small>
+        </div>
+        <div className={`wku-invite-seat ${personBReady ? 'is-ready' : ''}`}>
+          <span>{inviteView ? '你' : 'Ta'}</span>
+          <b>{personBReady ? '样本已填写' : inviteView ? '等待你填写' : '等待 Ta 补全'}</b>
+          <small>{personB.mood || personB.interestText || (inviteView ? '填写后即可一起生成共振盘' : '链接会把 Ta 带到填写页')}</small>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const WorkbenchActionsPanel: React.FC<{
+  mode: Mode;
+  result: VibeLineResult | null;
+  personA: ProfileFormState;
+  personB: ProfileFormState;
+  shareLink: string;
+  inviteLink: string;
+  copiedId: string;
+  inviteView: boolean;
+  onCopyText: (id: string, text: string) => void;
+  onOpenShare: () => void;
+}> = ({
+  mode,
+  result,
+  personA,
+  personB,
+  shareLink,
+  inviteLink,
+  copiedId,
+  inviteView,
+  onCopyText,
+  onOpenShare,
+}) => (
+  <div className="wku-workbench-actions">
+    {mode === 'single' ? (
+      <div className="wku-share-link-panel">
+        <p className="text-xs font-black text-teal-700">个人分享功能</p>
+        <h3 className="mt-1 text-base font-black text-slate-950">分享你的结果链接</h3>
+        <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+          {result ? '链接只包含你的分析结果，对方打开后可以生成自己的 soul-kline。' : '生成 Who Know U 后，这里会出现可复制的个人结果链接。'}
+        </p>
+        <div className="mt-3 grid gap-2">
+          <button
+            type="button"
+            disabled={!shareLink}
+            onClick={() => onCopyText('single-share-link', shareLink)}
+            className="wku-view-result-button wku-clickable w-full"
+          >
+            {copiedId === 'single-share-link' ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            复制个人结果链接
+          </button>
+          <button
+            type="button"
+            disabled={!shareLink}
+            onClick={onOpenShare}
+            className="wku-view-result-button wku-clickable w-full"
+          >
+            打开分享页
+          </button>
+        </div>
+      </div>
+    ) : (
+      <InviteLinkPanel
+        personA={personA}
+        personB={personB}
+        inviteLink={inviteLink}
+        copied={copiedId === 'match-invite-link'}
+        inviteView={inviteView}
+        onCopy={() => onCopyText('match-invite-link', inviteLink)}
+      />
+    )}
+  </div>
+);
+
+const WorkbenchShell: React.FC<{
+  activeView: AppView;
+  mode: Mode;
+  collapsed: boolean;
+  recentRuns: RecentRunRecord[];
+  onToggle: () => void;
+  onNavigateHome: () => void;
+  onSelectMode: (mode: Mode) => void;
+  onOpenRecent: (record: RecentRunRecord) => void;
+  children: React.ReactNode;
+}> = ({
+  activeView,
+  mode,
+  collapsed,
+  recentRuns,
+  onToggle,
+  onNavigateHome,
+  onSelectMode,
+  onOpenRecent,
+  children,
+}) => (
+  <div className={`wku-app-shell ${collapsed ? 'is-collapsed' : ''}`}>
+    <aside className={`wku-side-nav ${collapsed ? 'is-collapsed' : ''}`} aria-label="WKU 页面导航">
+      <button type="button" className="wku-side-toggle wku-clickable" onClick={onToggle} aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}>
+        {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+      </button>
+      <div className="wku-side-brand">
+        <span>WKU</span>
+        {!collapsed && (
+          <div>
+            <b>soul-kline</b>
+            <small>体验工作台</small>
+          </div>
+        )}
+      </div>
+      <nav className="wku-side-nav-list">
+        <button type="button" className={`wku-side-nav-item wku-clickable ${activeView === 'workbench' && mode === 'single' ? 'is-active' : ''}`} onClick={() => onSelectMode('single')}>
+          <Sparkles className="h-4 w-4" />
+          {!collapsed && <span>个人生成</span>}
+        </button>
+        <button type="button" className={`wku-side-nav-item wku-clickable ${activeView === 'workbench' && mode === 'match' ? 'is-active' : ''}`} onClick={() => onSelectMode('match')}>
+          <Users className="h-4 w-4" />
+          {!collapsed && <span>双人邀请</span>}
+        </button>
+        <button type="button" className={`wku-side-nav-item wku-clickable ${activeView === 'share' ? 'is-active' : ''}`} onClick={onNavigateHome}>
+          <ArrowDown className="h-4 w-4" />
+          {!collapsed && <span>返回工作台</span>}
+        </button>
+      </nav>
+      {!collapsed && (
+        <div className="wku-recent-runs">
+          <p>最近生成</p>
+          {recentRuns.length ? (
+            recentRuns.map((record) => (
+              <button key={record.id} type="button" className="wku-recent-run wku-clickable" onClick={() => onOpenRecent(record)}>
+                <b>{record.title}</b>
+                <span>{record.detail}</span>
+              </button>
+            ))
+          ) : (
+            <span className="wku-recent-empty">生成后会记录最近 5 次结果</span>
+          )}
+        </div>
+      )}
+    </aside>
+    <div className="wku-app-content">{children}</div>
+  </div>
+);
+
+const SharedResultPage: React.FC<{
+  payload: SharePayload;
+  onStartOwn: () => void;
+}> = ({ payload, onStartOwn }) => {
+  const { result } = payload;
+  const finalScore = result.kline[result.kline.length - 1]?.close ?? '-';
+  const shareText = buildSingleShareText(result);
+
+  return (
+    <section className="wku-shared-result-page">
+      <button type="button" className="wku-back-button wku-clickable" onClick={onStartOwn}>
+        <ChevronLeft className="h-4 w-4" />
+        生成我的 soul-kline
+      </button>
+      <div className="wku-shared-result-hero">
+        <div>
+          <p className="text-xs font-black text-teal-700">来自朋友的 Who Know U 结果</p>
+          <h1 className="mt-2 text-2xl font-black text-slate-950">Ta 的 WKU soul-kline</h1>
+          <p className="mt-3 max-w-[70ch] text-sm font-semibold leading-7 text-slate-700">{result.summary}</p>
+        </div>
+        <div className="wku-shared-score">
+          <span>连接分</span>
+          <b>{finalScore}</b>
+        </div>
+      </div>
+      <VibeLineChart
+        data={result.kline}
+        modeLabel="Who Know U"
+        modelLabel={AI_MODEL_LABEL}
+        estimateText="已生成"
+      />
+      <div className="grid gap-4 xl:grid-cols-3">
+        {result.soulmateSignals.slice(0, 3).map((lens) => (
+          <SoulmateCard key={lens.type} lens={lens} />
+        ))}
+      </div>
+      <div className="wku-shared-summary" aria-label="分享摘要">
+        <b>结果摘要</b>
+        <p>{shareText}</p>
+      </div>
+      <div className="wku-shared-result-cta">
+        <div>
+          <b>也看看谁会懂你</b>
+          <p>返回工作台填写你的样本，生成只属于你的 WKU soul-kline。</p>
+        </div>
+        <button type="button" className="wku-start-button wku-clickable" onClick={onStartOwn}>
+          <Sparkles className="h-4 w-4" />
+          生成我的 soul-kline
+        </button>
+      </div>
+    </section>
+  );
+};
+
 const ResultPreviewPanel: React.FC<{ mode: Mode }> = ({ mode }) => {
   const isMatch = mode === 'match';
   const items = isMatch
@@ -885,6 +1352,9 @@ const ResultPreviewPanel: React.FC<{ mode: Mode }> = ({ mode }) => {
 };
 
 const VibeLinePage: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { sharePayload, invitePayload } = useParams<{ sharePayload?: string; invitePayload?: string }>();
   const pageRef = useRef<HTMLDivElement | null>(null);
   const resultSectionRef = useRef<HTMLElement | null>(null);
   const [mode, setMode] = useState<Mode>('single');
@@ -902,7 +1372,20 @@ const VibeLinePage: React.FC = () => {
   const [matchError, setMatchError] = useState('');
   const [copiedId, setCopiedId] = useState('');
   const [scrollIntent, setScrollIntent] = useState<Mode | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [recentRuns, setRecentRuns] = useState<RecentRunRecord[]>(getRecentRuns);
+  const [hashRoute, setHashRoute] = useState(() => (typeof window === 'undefined' ? '' : window.location.hash));
   const { contextSafe } = useGSAP({ scope: pageRef });
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const hashSharePayload = useMemo(() => getHashPayload(hashRoute, 'share'), [hashRoute]);
+  const hashInvitePayload = useMemo(() => getHashPayload(hashRoute, 'invite'), [hashRoute]);
+  const sharedPayload = useMemo(
+    () => decodeSharePayload(sharePayload || hashSharePayload || searchParams.get('wkuShare')),
+    [sharePayload, hashSharePayload, searchParams]
+  );
+  const routeInvitePayload = invitePayload || hashInvitePayload || searchParams.get('wkuInvite');
+  const activeView: AppView = sharedPayload ? 'share' : routeInvitePayload ? 'invite' : 'workbench';
+  const inviteView = activeView === 'invite';
 
   const singleInput = useMemo(() => profileToInput(singleProfile), [singleProfile]);
   const canSubmit = singleInput.draft.trim().length >= 12 && !loading;
@@ -929,9 +1412,35 @@ const VibeLinePage: React.FC = () => {
   const activeHasResult = mode === 'single' ? Boolean(result) : Boolean(matchResult);
   const activeResultReady = activeHasResult && !activeLoading;
   const generateButtonLabel = activeLoading ? '生成中' : activeResultReady ? '重新生成 soul-kline' : '生成 soul-kline';
+  const estimateSeed = mode === 'single'
+    ? `${singleProfile.draft}${singleProfile.interestText}`
+    : `${personA.draft}${personB.draft}${relationshipGoal}`;
+  const activeGenerationEstimate = `${getConcreteEstimateSeconds(mode, estimateSeed)}s`;
+  const showRunCard = !activeLoading && !activeResultReady;
+  const inviteLink = useMemo(() => {
+    if (typeof window === 'undefined') return '';
+
+    const payload = encodeInvitePayload({
+      personA,
+      relationshipGoal,
+      createdAt: new Date().toISOString(),
+    });
+    if (!payload) return '';
+
+    return `${window.location.origin}${buildInviteHref(payload)}`;
+  }, [personA, relationshipGoal]);
+  const singleShareLink = useMemo(() => {
+    if (!result || typeof window === 'undefined') return '';
+
+    const payload = encodeSharePayload(createSharePayload(result));
+    if (!payload) return '';
+
+    return `${window.location.origin}${buildShareHref(payload)}`;
+  }, [result]);
 
   const performGenerationPreviewScroll = contextSafe(() => {
-    const target = resultSectionRef.current;
+    const target = resultSectionRef.current?.querySelector<HTMLElement>('.wku-chart-card, .wku-chart-loading-card')
+      || resultSectionRef.current;
     if (!target) return;
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -944,19 +1453,19 @@ const VibeLinePage: React.FC = () => {
 
     gsap.killTweensOf([window, target, note].filter(Boolean));
     gsap.to(window, {
-      duration: 0.88,
-      ease: 'power3.inOut',
-      scrollTo: { y: target, offsetY: 16 },
+      duration: GENERATION_SCROLL_DURATION,
+      ease: 'power3.out',
+      scrollTo: { y: target, offsetY: 24 },
       overwrite: true,
     });
     gsap.fromTo(
       target,
-      { y: 18, filter: 'brightness(1.02)' },
+      { y: 8, filter: 'brightness(1.015)' },
       {
         y: 0,
         filter: 'brightness(1)',
-        duration: 0.6,
-        delay: 0.12,
+        duration: 0.24,
+        delay: 0.02,
         ease: 'power3.out',
         overwrite: 'auto',
         clearProps: 'transform,filter',
@@ -970,8 +1479,8 @@ const VibeLinePage: React.FC = () => {
           autoAlpha: 1,
           y: 0,
           scale: 1,
-          duration: 0.38,
-          delay: 0.2,
+          duration: 0.2,
+          delay: 0.02,
           ease: 'power3.out',
           overwrite: 'auto',
           clearProps: 'transform,opacity,visibility',
@@ -982,8 +1491,40 @@ const VibeLinePage: React.FC = () => {
 
   const scrollToGenerationPreview = (runMode: Mode) => {
     setScrollIntent(runMode);
-    window.setTimeout(performGenerationPreviewScroll, 80);
+    requestAnimationFrame(performGenerationPreviewScroll);
   };
+
+  const handleExperienceJump = contextSafe((event?: React.MouseEvent<HTMLButtonElement>) => {
+    event?.preventDefault();
+    const target = document.getElementById('wku-experience');
+    if (!target) return;
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      target.scrollIntoView({ block: 'start' });
+      return;
+    }
+
+    gsap.killTweensOf([window, target]);
+    gsap.to(window, {
+      duration: EXPERIENCE_SCROLL_DURATION,
+      ease: 'power3.out',
+      scrollTo: { y: '#wku-experience', offsetY: 48 },
+      overwrite: true,
+    });
+    gsap.fromTo(
+      target,
+      { y: 10, filter: 'brightness(1.015)' },
+      {
+        y: 0,
+        filter: 'brightness(1)',
+        duration: 0.24,
+        delay: 0.04,
+        ease: 'power3.out',
+        clearProps: 'transform,filter',
+      }
+    );
+  });
 
   const handleModeChange = (nextMode: Mode) => {
     setMode(nextMode);
@@ -992,11 +1533,77 @@ const VibeLinePage: React.FC = () => {
     setProgress(nextMode === 'single' ? '等待生成你的 WKU soul-kline' : '等待生成你们的 Who Know Us');
   };
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const syncHashRoute = () => setHashRoute(window.location.hash);
+    window.addEventListener('hashchange', syncHashRoute);
+    return () => window.removeEventListener('hashchange', syncHashRoute);
+  }, []);
+
+  useEffect(() => {
+    const invitePayload = decodeInvitePayload(routeInvitePayload);
+    if (!invitePayload) return;
+
+    setMode('match');
+    setPersonA(invitePayload.personA);
+    setPersonB(normalizeInviteProfile());
+    setRelationshipGoal(invitePayload.relationshipGoal);
+    setProgress('Ta 的信息已经填好，等待你填写自己的社交样本');
+  }, [routeInvitePayload]);
+
+  const openWorkbench = (nextMode: Mode = 'single') => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
+      setHashRoute('');
+    }
+    navigate('/');
+    handleModeChange(nextMode);
+    requestAnimationFrame(() => handleExperienceJump());
+  };
+
+  const openSharePage = () => {
+    if (!singleShareLink) return;
+
+    const nextHash = new URL(singleShareLink).hash;
+    if (typeof window === 'undefined' || !nextHash) {
+      navigate(new URL(singleShareLink).pathname);
+      return;
+    }
+
+    window.location.hash = nextHash;
+    setHashRoute(nextHash);
+  };
+
+  const saveRecentRun = (record: RecentRunRecord) => {
+    setRecentRuns((prev) => {
+      const next = [record, ...prev.filter((item) => item.id !== record.id)].slice(0, 5);
+      window.localStorage.setItem(RECENT_RUNS_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const openRecentRun = (record: RecentRunRecord) => {
+    if (record.href.startsWith('/#/share/')) {
+      if (typeof window !== 'undefined') {
+        window.location.href = `${window.location.origin}${record.href}`;
+      }
+      return;
+    }
+
+    if (record.href.startsWith('/share/')) {
+      navigate(record.href);
+      return;
+    }
+
+    handleModeChange(record.type);
+    navigate('/');
+    requestAnimationFrame(() => resultSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
+
   const handleHeroModeSelect = (nextMode: Mode) => {
     handleModeChange(nextMode);
-    window.setTimeout(() => {
-      document.getElementById('wku-experience')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 40);
+    requestAnimationFrame(() => handleExperienceJump());
   };
 
   const startMatchFromSingle = () => {
@@ -1073,6 +1680,15 @@ const VibeLinePage: React.FC = () => {
       });
       setResult(finalResult);
       setProgress('你的 Who Know U 已生成');
+      const shareToken = encodeSharePayload(createSharePayload(finalResult));
+      saveRecentRun({
+        id: `single-${finalResult.meta.generatedAt}`,
+        type: 'single',
+        title: finalResult.marketType,
+        detail: `连接分 ${finalResult.kline[finalResult.kline.length - 1]?.close ?? '-'}/100`,
+        href: shareToken ? buildShareHref(shareToken) : '/',
+        createdAt: finalResult.meta.generatedAt,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : '生成失败');
       setProgress('生成中断');
@@ -1124,6 +1740,14 @@ const VibeLinePage: React.FC = () => {
       setMatchResult(finalResult);
       setAgentStatuses(createAgentStatusSnapshot(MATCH_AGENT_PHASES.complete));
       setProgress('你们的 Who Know Us 已生成');
+      saveRecentRun({
+        id: `match-${finalResult.meta.generatedAt}`,
+        type: 'match',
+        title: finalResult.marketType,
+        detail: `共振分 ${finalResult.matchScore}/100`,
+        href: '/',
+        createdAt: finalResult.meta.generatedAt,
+      });
     } catch (err) {
       setMatchError(err instanceof Error ? err.message : '生成失败');
       setAgentStatuses((prev) => {
@@ -1142,14 +1766,34 @@ const VibeLinePage: React.FC = () => {
     }
   };
 
-  const copyCard = (card: VibeLineVariant) => {
-    void navigator.clipboard.writeText(card.text);
-    setCopiedId(card.id);
+  const copyText = (id: string, text: string) => {
+    if (!text) return;
+    void navigator.clipboard.writeText(text);
+    setCopiedId(id);
     window.setTimeout(() => setCopiedId(''), 1400);
+  };
+
+  const copyCard = (card: VibeLineVariant) => {
+    copyText(card.id, card.text);
   };
 
   return (
     <div ref={pageRef} className="wku-page min-h-screen text-slate-950">
+      <WorkbenchShell
+        activeView={activeView}
+        mode={mode}
+        collapsed={sidebarCollapsed}
+        recentRuns={recentRuns}
+        onToggle={() => setSidebarCollapsed((prev) => !prev)}
+        onNavigateHome={() => openWorkbench('single')}
+        onSelectMode={(nextMode) => openWorkbench(nextMode)}
+        onOpenRecent={openRecentRun}
+      >
+        {sharedPayload ? (
+          <main className="relative mx-auto max-w-[1320px] px-4 py-5 sm:px-6">
+            <SharedResultPage payload={sharedPayload} onStartOwn={() => openWorkbench('single')} />
+          </main>
+        ) : (
       <main className="relative mx-auto max-w-[1500px] px-4 py-5 sm:px-6">
         <section className="wku-hero wku-glass-hero wku-hero-strip mb-4 overflow-hidden">
           <div className="relative px-5 py-5 sm:px-7 lg:px-8">
@@ -1192,10 +1836,15 @@ const VibeLinePage: React.FC = () => {
                 <HeroModeSwitch mode={mode} onSelectMode={handleHeroModeSelect} />
               </div>
 
-              <a className="wku-hero-cta wku-clickable" href="#wku-experience" aria-label="立即体验 WKU soul-kline">
+              <button
+                type="button"
+                className="wku-hero-cta wku-clickable"
+                onClick={handleExperienceJump}
+                aria-label="立即体验 WKU soul-kline"
+              >
                 <span>立即体验</span>
                 <ArrowDown className="h-4 w-4" />
-              </a>
+              </button>
             </div>
 
             <div className="wku-hero-map mt-5">
@@ -1254,13 +1903,21 @@ const VibeLinePage: React.FC = () => {
 
             <div className="wku-workbench-body">
               <aside className="wku-lens-desk">
-                <div>
-                  <p className="text-xs font-black text-teal-700">当前分析对象</p>
-                  <h3 className="mt-1 text-xl font-black text-slate-950">{modeMeta.name}</h3>
-                  <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">{modeMeta.description}</p>
+                <div className="wku-lens-summary">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-black text-teal-700">当前分析对象</p>
+                      <h3 className="mt-1 text-xl font-black text-slate-950">{modeMeta.name}</h3>
+                      <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">{modeMeta.description}</p>
+                    </div>
+                    <span className="wku-active-lens-badge">{modeMeta.short}</span>
+                  </div>
+                  <div className="wku-lens-summary-grid" aria-label="生成内容">
+                    {previewDeliverables.map((item) => (
+                      <span key={item}>{item}</span>
+                    ))}
+                  </div>
                 </div>
-                <span className="wku-active-lens-badge">{modeMeta.short}</span>
-                <ScoreGuide />
 
                 <div className="wku-sample-bank">
                   <p className="text-xs font-black text-slate-500">{mode === 'single' ? '快速代入一个社交样本' : '快速代入一组双人样本'}</p>
@@ -1318,6 +1975,19 @@ const VibeLinePage: React.FC = () => {
                     mode={mode}
                   />
                 )}
+
+                <WorkbenchActionsPanel
+                  mode={mode}
+                  result={result}
+                  personA={personA}
+                  personB={personB}
+                  shareLink={singleShareLink}
+                  inviteLink={inviteLink}
+                  copiedId={copiedId}
+                  inviteView={inviteView}
+                  onCopyText={copyText}
+                  onOpenShare={openSharePage}
+                />
               </aside>
 
               <section className="wku-input-deck">
@@ -1334,6 +2004,7 @@ const VibeLinePage: React.FC = () => {
                       onClick={mode === 'single' ? runAnalyze : runMatch}
                       disabled={!activeCanRun || activeLoading}
                       className="wku-start-button wku-clickable wku-start-button-head"
+                      aria-label={`${generateButtonLabel}，预计 ${activeGenerationEstimate}`}
                     >
                       {activeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                       {generateButtonLabel}
@@ -1364,14 +2035,16 @@ const VibeLinePage: React.FC = () => {
                       </div>
                       <div className="wku-match-form-grid">
                         <ProfileForm
-                          title="你的社交样本"
+                          title={inviteView ? 'Ta 的社交样本' : '你的社交样本'}
                           profile={personA}
                           compact
                           tone="self"
-                          onChange={(key, value) => updateProfile(setPersonA, key, value)}
+                          onChange={(key, value) => {
+                            if (!inviteView) updateProfile(setPersonA, key, value);
+                          }}
                         />
                         <ProfileForm
-                          title="TA 的社交样本"
+                          title={inviteView ? '你的社交样本' : 'TA 的社交样本'}
                           profile={personB}
                           compact
                           tone="partner"
@@ -1388,30 +2061,37 @@ const VibeLinePage: React.FC = () => {
                   </div>
                 )}
 
-                <div className="wku-command-ribbon">
-                  <div className="min-w-0">
-                    <p className="text-sm font-black text-slate-950">{activeActionLabel}</p>
-                    <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
-                      {activeResultReady ? '读盘已经生成。你可以继续修改样本重新生成，结果已在下方同步更新。' : activeLoading ? progress : '样本准备好后点击生成 soul-kline，系统会先读懂样本，再进入读盘。'}
-                    </p>
+                {showRunCard && (
+                  <div className="wku-command-ribbon wku-form-run-card">
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-slate-950">{activeActionLabel}</p>
+                      <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">
+                        样本准备好后点击生成 soul-kline，系统会先读懂样本，再进入读盘。
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={mode === 'single' ? runAnalyze : runMatch}
+                        disabled={!activeCanRun || activeLoading}
+                        className="wku-start-button wku-clickable"
+                        aria-label={`${generateButtonLabel}，预计 ${activeGenerationEstimate}`}
+                      >
+                        <Sparkles className="h-4 w-4" />
+                        {generateButtonLabel}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={mode === 'single' ? runAnalyze : runMatch}
-                      disabled={!activeCanRun || activeLoading}
-                      className="wku-start-button wku-clickable"
-                    >
-                      {activeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                      {generateButtonLabel}
-                    </button>
-                  </div>
-                </div>
+                )}
               </section>
             </div>
           </div>
 
-          <section ref={resultSectionRef} id="wku-results" className="wku-output wku-result-block space-y-5 scroll-mt-5">
+          <section
+            ref={resultSectionRef}
+            id="wku-results"
+            className={`wku-output wku-result-block space-y-5 scroll-mt-5 ${activeLoading ? 'is-generating' : ''}`}
+          >
             {activeLoading && (
               <div className="wku-generation-scroll-note" role="status" aria-live="polite">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -1420,7 +2100,15 @@ const VibeLinePage: React.FC = () => {
             )}
             {mode === 'single' ? (
               <>
-                <VibeLineChart data={result?.kline || []} loading={loading} loadingText={progress} modeLabel="Who Know U" agentStatuses={agentStatuses} />
+                <VibeLineChart
+                  data={result?.kline || []}
+                  loading={loading}
+                  loadingText={progress}
+                  modeLabel="Who Know U"
+                  agentStatuses={agentStatuses}
+                  modelLabel={AI_MODEL_LABEL}
+                  estimateText={activeGenerationEstimate}
+                />
 
                 {!loading && (
                   result ? (
@@ -1450,6 +2138,21 @@ const VibeLinePage: React.FC = () => {
                         <Users className="h-4 w-4" />
                       </button>
                     </div>
+
+                    <ShareResultCard
+                      title="我的 Who Know U 连接读盘"
+                      eyebrow={result.marketType}
+                      summary={result.summary}
+                      badges={[
+                        `连接分 ${result.kline[result.kline.length - 1]?.close ?? '-'}/100`,
+                        result.input.zodiac || '兴趣社交',
+                        result.input.mbti || '表达样本',
+                      ]}
+                      shareLink={singleShareLink}
+                      copied={copiedId === 'single-result-share'}
+                      onCopy={() => copyText('single-result-share', singleShareLink)}
+                      onOpen={openSharePage}
+                    />
 
                     <div className="grid gap-4 xl:grid-cols-2">
                       <div className={`${panelClass} p-4`}>
@@ -1523,7 +2226,15 @@ const VibeLinePage: React.FC = () => {
               </>
             ) : (
               <>
-                  <VibeLineChart data={matchResult?.resonanceKline || []} loading={matchLoading} loadingText={progress} modeLabel="Who Know Us" agentStatuses={agentStatuses} />
+                  <VibeLineChart
+                    data={matchResult?.resonanceKline || []}
+                    loading={matchLoading}
+                    loadingText={progress}
+                    modeLabel="Who Know Us"
+                    agentStatuses={agentStatuses}
+                    modelLabel={AI_MODEL_LABEL}
+                    estimateText={activeGenerationEstimate}
+                  />
 
                 {!matchLoading && (
                   matchResult ? (
@@ -1542,6 +2253,22 @@ const VibeLinePage: React.FC = () => {
                       </div>
                       <p className="text-base leading-8 text-slate-700">{matchResult.summary}</p>
                     </div>
+
+                    <ShareResultCard
+                      title="我们的 Who Know Us 共振读盘"
+                      eyebrow={`共振分 ${matchResult.matchScore}/100`}
+                      summary={matchResult.summary}
+                      badges={[
+                        matchResult.marketType,
+                        `${matchResult.stageAdvice.length} 个阶段建议`,
+                        `${matchResult.conversationBridges.length} 条开场灵感`,
+                      ]}
+                      shareLink={buildMatchShareText(matchResult)}
+                      copied={copiedId === 'match-result-share'}
+                      onCopy={() => copyText('match-result-share', buildMatchShareText(matchResult))}
+                      copyLabel="复制共振摘要"
+                      linkDescription="这段摘要只用于你们自己复盘；邀请 Ta 请使用左侧的双人邀请链接。"
+                    />
 
                     <div className="grid gap-4 xl:grid-cols-2">
                       <div className={`${panelClass} p-4`}>
@@ -1616,6 +2343,8 @@ const VibeLinePage: React.FC = () => {
           </section>
         </section>
       </main>
+        )}
+      </WorkbenchShell>
     </div>
   );
 };

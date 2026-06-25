@@ -14,6 +14,8 @@ interface VibeLineChartProps {
   loading?: boolean;
   modeLabel?: string;
   loadingText?: string;
+  modelLabel?: string;
+  estimateText?: string;
   agentStatuses?: VibeLineAgentStatusMap;
 }
 
@@ -286,13 +288,17 @@ const LoadingAgentProgress: React.FC<{ agentStatuses?: VibeLineAgentStatusMap }>
 const ChartLoading: React.FC<{
   modeLabel?: string;
   loadingText?: string;
+  modelLabel?: string;
+  estimateText?: string;
   agentStatuses?: VibeLineAgentStatusMap;
 }> = ({
   modeLabel = 'Who Know U',
   loadingText = 'AI 正在把样本转成连接曲线',
+  modelLabel = 'DeepSeek',
+  estimateText = '22s',
   agentStatuses,
 }) => (
-  <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+  <div className="wku-chart-card wku-chart-loading-card overflow-hidden p-4">
     <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
       <div className="min-w-0">
         <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -300,6 +306,11 @@ const ChartLoading: React.FC<{
           <h2 className="text-lg font-black text-slate-950">正在生成读盘</h2>
         </div>
         <p className="max-w-2xl text-sm font-semibold leading-6 text-slate-600">{loadingText}</p>
+        <div className="wku-chart-run-meta" aria-label="当前 AI 生成信息">
+          <span>AI 正在分析样本</span>
+          <span>当前模型：{modelLabel}</span>
+          <span>预计 {estimateText}</span>
+        </div>
       </div>
       <div role="status" aria-live="polite" className="wku-loading-status">
         <span className="wku-loading-status-dot" aria-hidden="true" />
@@ -382,7 +393,15 @@ const ChartEmpty: React.FC<{ modeLabel?: string }> = ({ modeLabel = 'Who Know U'
 );
 };
 
-const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, modeLabel = 'Who Know U', loadingText, agentStatuses }) => {
+const VibeLineChart: React.FC<VibeLineChartProps> = ({
+  data,
+  loading = false,
+  modeLabel = 'Who Know U',
+  loadingText,
+  modelLabel = 'DeepSeek',
+  estimateText = '22s',
+  agentStatuses,
+}) => {
   const chartData = loading ? [] : data;
   const [activeIndex, setActiveIndex] = useState(0);
   const [tooltipVisible, setTooltipVisible] = useState(false);
@@ -392,6 +411,33 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
   const [hoveredStageName, setHoveredStageName] = useState<string | null>(null);
   const chartRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const { contextSafe } = useGSAP({ scope: chartRef });
+
+  const animatePointFeedback = contextSafe((pointId: string, locked = false) => {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const node = chartRef.current?.querySelector<SVGGElement>(`[data-point-id="${pointId}"]`);
+    const cursor = chartRef.current?.querySelector<SVGGElement>('.wku-chart-cursor');
+    if (!node || reduceMotion) return;
+
+    gsap.to([node, cursor].filter(Boolean), {
+      filter: locked ? 'drop-shadow(0 0 10px rgba(20, 184, 166, 0.32))' : 'drop-shadow(0 0 6px rgba(8, 145, 178, 0.24))',
+      duration: 0.16,
+      ease: 'power3.out',
+      overwrite: 'auto',
+      clearProps: 'filter',
+    });
+    gsap.fromTo(
+      node.querySelectorAll('circle'),
+      { scale: locked ? 1.08 : 0.94, transformOrigin: '50% 50%' },
+      {
+        scale: 1,
+        duration: locked ? 0.28 : 0.2,
+        ease: 'power3.out',
+        overwrite: 'auto',
+        clearProps: 'transform',
+      }
+    );
+  });
 
   useEffect(() => {
     setActiveIndex(0);
@@ -473,7 +519,7 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
     };
   }, [plotData]);
 
-  const setTooltipFromPoint = (point: PlotPoint) => {
+  const setTooltipFromPoint = (point: PlotPoint, locked = false) => {
     const anchorX = (point.x / VIEWBOX_WIDTH) * 100;
     const anchorY = (point.y / VIEWBOX_HEIGHT) * 100;
     const rect = svgRef.current?.getBoundingClientRect();
@@ -518,6 +564,7 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
     setTooltipPlacement(side);
     setTooltipPosition({ left: `${left}%`, top: `${top}%` });
     setTooltipVisible(true);
+    animatePointFeedback(point.id, locked);
   };
 
   const getPointerPoint = (clientX: number, clientY: number): PointerPoint | null => {
@@ -581,7 +628,7 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
 
     setHoveredStageName(point.stageName);
     setActiveIndex(index);
-    setTooltipFromPoint(point);
+    setTooltipFromPoint(point, true);
     setTooltipLocked(true);
   };
 
@@ -660,7 +707,17 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
     );
   }, { scope: chartRef, dependencies: [activeIndex], revertOnUpdate: false });
 
-  if (loading) return <ChartLoading modeLabel={modeLabel} loadingText={loadingText} agentStatuses={agentStatuses} />;
+  if (loading) {
+    return (
+      <ChartLoading
+        modeLabel={modeLabel}
+        loadingText={loadingText}
+        modelLabel={modelLabel}
+        estimateText={estimateText}
+        agentStatuses={agentStatuses}
+      />
+    );
+  }
   if (chartData.length === 0) return <ChartEmpty modeLabel={modeLabel} />;
 
   return (
@@ -677,6 +734,11 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
           <p className="max-w-2xl text-sm leading-6 text-slate-700">
             六阶段连接生命周期，每阶段拆成 3 个微节点。沿曲线移动或聚焦节点，读盘卡片会解释当前点位。
           </p>
+          <div className="wku-chart-run-meta" aria-label="当前 AI 生成信息">
+            <span>AI 已完成读盘</span>
+            <span>当前模型：{modelLabel}</span>
+            <span>预计 {estimateText}</span>
+          </div>
           <div className="wku-score-guide wku-chart-score-guide" aria-label="分数怎么读">
             <div className="wku-score-guide-head">
               <p className="text-xs font-black text-teal-700">分数怎么读</p>
@@ -812,6 +874,7 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
               <g key={group.name}>
                 {active && (
                   <rect
+                    className="wku-active-stage-band"
                     x={Math.max(PAD_X, group.startX - 22)}
                     y={CHART_TOP - 8}
                     width={Math.max(44, group.endX - group.startX + 44)}
@@ -861,6 +924,20 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
             <path d={paths.closePath} fill="none" stroke="#0f766e" strokeOpacity="0.1" strokeWidth="11" strokeLinecap="round" />
             <path className="soul-kline-draw" d={paths.closePath} fill="none" stroke="url(#soulLineGradientSvg)" strokeWidth="4.6" strokeLinecap="round" filter="url(#soulGlow)" />
             <path d={paths.closePath} fill="none" stroke="rgba(255,255,255,0.42)" strokeWidth="1.1" strokeLinecap="round" />
+
+            {activePoint && (
+              <g className="wku-chart-cursor" aria-hidden="true">
+                <line
+                  x1={activePoint.x}
+                  y1={CHART_TOP}
+                  x2={activePoint.x}
+                  y2={VOLUME_TOP + VOLUME_HEIGHT}
+                  vectorEffect="non-scaling-stroke"
+                />
+                <circle cx={activePoint.x} cy={activePoint.y} r="18" />
+                <circle cx={activePoint.x} cy={activePoint.y} r="4.5" />
+              </g>
+            )}
 
             <rect
               x={PAD_X}
@@ -922,6 +999,7 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({ data, loading = false, mo
               return (
                 <g
                 key={point.id}
+                  data-point-id={point.id}
                   onMouseEnter={() => {
                     if (tooltipLocked) return;
                     setHoveredStageName(point.stageName);

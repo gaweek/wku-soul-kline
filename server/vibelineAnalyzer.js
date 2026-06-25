@@ -17,6 +17,7 @@ const DEFAULT_MODEL = getProviderDefaultModel(
   process.env.DEFAULT_MODEL,
   'gemini-3-pro-preview'
 );
+const FAST_SINGLE_AGENT_TIMEOUT_MS = 22000;
 
 const sendSSE = (res, event, data) => {
   if (!res.writableEnded) {
@@ -42,7 +43,7 @@ const parseJsonObject = (content = '') => {
   return JSON.parse(clean);
 };
 
-const requestAgent = async (agent, input, partialState, timeoutMs = 45000) => {
+const requestAgent = async (agent, input, partialState, timeoutMs = FAST_SINGLE_AGENT_TIMEOUT_MS) => {
   if (!DEFAULT_API_KEY) {
     return { success: false, agentType: agent.type, error: 'MISSING_API_KEY' };
   }

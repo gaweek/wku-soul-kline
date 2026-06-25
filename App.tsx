@@ -20,6 +20,8 @@ const App: React.FC = () => (
         <Route path="/" element={<VibeLinePage />} />
         <Route path="/vibeline" element={<VibeLinePage />} />
         <Route path="/soul-kline" element={<VibeLinePage />} />
+        <Route path="/share/:sharePayload" element={<VibeLinePage />} />
+        <Route path="/invite/:invitePayload" element={<VibeLinePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

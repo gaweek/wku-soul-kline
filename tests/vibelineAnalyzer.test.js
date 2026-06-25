@@ -18,6 +18,13 @@ test('Who Know U analyzer measures elapsed after reading completion body', () =>
   assert.equal(successElapsedIndex > jsonIndex, true);
 });
 
+test('Who Know U analyzer keeps single generation on a short response budget', () => {
+  const source = readFileSync(new URL('../server/vibelineAnalyzer.js', import.meta.url), 'utf8');
+
+  assert.match(source, /FAST_SINGLE_AGENT_TIMEOUT_MS\s*=\s*22000/);
+  assert.match(source, /timeoutMs = FAST_SINGLE_AGENT_TIMEOUT_MS/);
+});
+
 test('Who Know Us analyzer gives lifecycle kline agent extra time and a retry', () => {
   const source = readFileSync(new URL('../server/vibelineMatchAnalyzer.js', import.meta.url), 'utf8');
 
