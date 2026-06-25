@@ -294,7 +294,7 @@ const ChartLoading: React.FC<{
 }> = ({
   modeLabel = 'Who Know U',
   loadingText = 'AI 正在把样本转成连接曲线',
-  modelLabel = 'DeepSeek',
+  modelLabel = 'DeepSeek-V4-Flash',
   estimateText = '22s',
   agentStatuses,
 }) => (
@@ -398,7 +398,7 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({
   loading = false,
   modeLabel = 'Who Know U',
   loadingText,
-  modelLabel = 'DeepSeek',
+  modelLabel = 'DeepSeek-V4-Flash',
   estimateText = '22s',
   agentStatuses,
 }) => {
@@ -639,10 +639,12 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({
     mm.add('(prefers-reduced-motion: reduce)', () => {
       gsap.set('.soul-kline-draw', { strokeDashoffset: 0 });
       gsap.set('.soul-kline-area', { autoAlpha: 1 });
+      gsap.set('.soul-kline-boundary', { strokeOpacity: 0.56 });
     });
     mm.add('(prefers-reduced-motion: no-preference)', () => {
       gsap.set('.soul-kline-draw', { strokeDasharray: 1800, strokeDashoffset: 1800 });
       gsap.set('.soul-kline-area', { autoAlpha: 0 });
+      gsap.set('.soul-kline-boundary', { strokeOpacity: (index) => index === 0 ? 0.54 : 0.48 });
 
       const tl = gsap.timeline({
         defaults: { ease: 'power3.out' },
@@ -671,6 +673,16 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({
           stagger: { amount: 0.24, from: 'start' },
           clearProps: 'transform',
         }, 0.16);
+
+      gsap.to('.soul-kline-boundary', {
+        strokeOpacity: (index) => index === 0 ? 0.72 : 0.62,
+        duration: 1.8,
+        ease: 'sine.inOut',
+        repeat: -1,
+        yoyo: true,
+        stagger: { each: 0.18, from: 'start' },
+        overwrite: 'auto',
+      });
     });
 
     return () => mm.revert();
@@ -823,14 +835,14 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({
                 <stop offset="100%" stopColor="#a3e635" />
               </linearGradient>
               <linearGradient id="soulHighGradientSvg" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#67e8f9" stopOpacity="0.42" />
-                <stop offset="50%" stopColor="#14b8a6" stopOpacity="0.48" />
-                <stop offset="100%" stopColor="#a3e635" stopOpacity="0.36" />
+                <stop offset="0%" stopColor="#fda4af" stopOpacity="0.44" />
+                <stop offset="52%" stopColor="#fdba74" stopOpacity="0.58" />
+                <stop offset="100%" stopColor="#fed7aa" stopOpacity="0.4" />
               </linearGradient>
               <linearGradient id="soulLowGradientSvg" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#0891b2" stopOpacity="0.2" />
-                <stop offset="46%" stopColor="#14b8a6" stopOpacity="0.34" />
-                <stop offset="100%" stopColor="#a3e635" stopOpacity="0.22" />
+                <stop offset="0%" stopColor="#fed7aa" stopOpacity="0.34" />
+                <stop offset="48%" stopColor="#fb7185" stopOpacity="0.48" />
+                <stop offset="100%" stopColor="#fdba74" stopOpacity="0.32" />
               </linearGradient>
               <linearGradient id="soulAreaGradientSvg" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.25" />
@@ -919,8 +931,8 @@ const VibeLineChart: React.FC<VibeLineChartProps> = ({
             ))}
 
             <path className="soul-kline-area" d={paths.areaPath} fill="url(#soulAreaGradientSvg)" />
-            <path d={paths.highPath} fill="none" stroke="url(#soulHighGradientSvg)" strokeWidth="2.4" strokeDasharray="7 8" />
-            <path d={paths.lowPath} fill="none" stroke="url(#soulLowGradientSvg)" strokeWidth="2.4" strokeDasharray="7 8" />
+            <path className="soul-kline-boundary soul-kline-boundary-high" d={paths.highPath} fill="none" stroke="url(#soulHighGradientSvg)" strokeWidth="2.4" strokeDasharray="7 8" strokeLinecap="round" strokeOpacity="0.54" />
+            <path className="soul-kline-boundary soul-kline-boundary-low" d={paths.lowPath} fill="none" stroke="url(#soulLowGradientSvg)" strokeWidth="2.4" strokeDasharray="7 8" strokeLinecap="round" strokeOpacity="0.48" />
             <path d={paths.closePath} fill="none" stroke="#0f766e" strokeOpacity="0.1" strokeWidth="11" strokeLinecap="round" />
             <path className="soul-kline-draw" d={paths.closePath} fill="none" stroke="url(#soulLineGradientSvg)" strokeWidth="4.6" strokeLinecap="round" filter="url(#soulGlow)" />
             <path d={paths.closePath} fill="none" stroke="rgba(255,255,255,0.42)" strokeWidth="1.1" strokeLinecap="round" />

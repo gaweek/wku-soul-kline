@@ -345,7 +345,7 @@ const getGenerationScrollMessage = (mode: Mode) => (
     : '正在生成 Who Know Us 共振预览盘，已为你滑到读盘位置。'
 );
 
-const AI_MODEL_LABEL = 'DeepSeek';
+const AI_MODEL_LABEL = 'DeepSeek-V4-Flash';
 
 const GENERATION_ESTIMATE_RANGES: Record<Mode, [number, number]> = {
   single: [18, 24],
