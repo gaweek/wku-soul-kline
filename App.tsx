@@ -18,8 +18,9 @@ const App: React.FC = () => (
     <Suspense fallback={<PageLoadingFallback />}>
       <Routes>
         <Route path="/" element={<VibeLinePage />} />
-        <Route path="/vibeline" element={<VibeLinePage />} />
-        <Route path="/soul-kline" element={<VibeLinePage />} />
+        <Route path="/workbench" element={<VibeLinePage />} />
+        <Route path="/vibeline" element={<Navigate to="/workbench" replace />} />
+        <Route path="/soul-kline" element={<Navigate to="/workbench" replace />} />
         <Route path="/share/:sharePayload" element={<VibeLinePage />} />
         <Route path="/invite/:invitePayload" element={<VibeLinePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -5,10 +5,11 @@ import { useGSAP } from '@gsap/react';
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin';
 import {
   AlertCircle,
-  ArrowDown,
+  ArrowRight,
   CheckCircle2,
   ChevronLeft,
   Copy,
+  Home,
   Loader2,
   PanelLeftClose,
   PanelLeftOpen,
@@ -16,7 +17,9 @@ import {
   Sparkles,
   TrendingDown,
   TrendingUp,
+  UserRound,
   Users,
+  UsersRound,
   Waves,
 } from 'lucide-react';
 import VibeLineChart from '../components/VibeLineChart';
@@ -51,6 +54,15 @@ const VIBE_AGENT_ORDER: VibeLineAgentType[] = [
   'safety_authenticity',
 ];
 
+const ALL_AGENT_COMPLETE_STATUSES: Partial<Record<VibeLineAgentType, VibeLineAgentStatusType>> = {
+  persona_asset: 'completed',
+  resonance_factor: 'completed',
+  lifecycle_kline: 'completed',
+  audience_market: 'completed',
+  narrative_packaging: 'completed',
+  safety_authenticity: 'completed',
+};
+
 const createAgentStatusSnapshot = (
   statusByType: Partial<Record<VibeLineAgentType, VibeLineAgentStatusType>> = {}
 ): VibeLineAgentStatusMap => {
@@ -83,14 +95,7 @@ const MATCH_AGENT_PHASES: Record<'start' | 'preview' | 'match' | 'complete', Par
     narrative_packaging: 'running',
     safety_authenticity: 'running',
   },
-  complete: {
-    persona_asset: 'completed',
-    resonance_factor: 'completed',
-    lifecycle_kline: 'completed',
-    audience_market: 'completed',
-    narrative_packaging: 'completed',
-    safety_authenticity: 'completed',
-  },
+  complete: ALL_AGENT_COMPLETE_STATUSES,
 };
 
 interface ProfileFormState {
@@ -319,10 +324,9 @@ const GENERATION_ESTIMATE_RANGES: Record<Mode, [number, number]> = {
 };
 
 const GENERATION_SCROLL_DURATION = 0.32;
-const EXPERIENCE_SCROLL_DURATION = 0.34;
 const RECENT_RUNS_STORAGE_KEY = 'wkuRecentRuns';
 
-type AppView = 'workbench' | 'share' | 'invite';
+type AppView = 'home' | 'workbench' | 'share' | 'invite';
 
 interface InvitePayload {
   personA: ProfileFormState;
@@ -932,7 +936,7 @@ const AgentHandoffCard: React.FC<{
     <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">{progress}</p>
     <button type="button" onClick={onJump} className="wku-view-result-button wku-clickable mt-4 w-full">
       查看生成进度
-      <ArrowDown className="h-4 w-4" />
+      <ArrowRight className="h-4 w-4" />
     </button>
   </div>
 );
@@ -1072,14 +1076,12 @@ const ShareResultCard: React.FC<{
 
 const InviteLinkPanel: React.FC<{
   personA: ProfileFormState;
-  personB: ProfileFormState;
   inviteLink: string;
   copied: boolean;
   onCopy: () => void;
   inviteView?: boolean;
-}> = ({ personA, personB, inviteLink, copied, onCopy, inviteView }) => {
+}> = ({ personA, inviteLink, copied, onCopy, inviteView }) => {
   const personAReady = personA.draft.trim().length >= 12;
-  const personBReady = personB.draft.trim().length >= 12;
 
   return (
     <section className="wku-invite-panel" aria-label="双人邀请链接">
@@ -1104,19 +1106,6 @@ const InviteLinkPanel: React.FC<{
           {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           复制邀请链接
         </button>
-      </div>
-
-      <div className="wku-invite-seat-grid">
-        <div className={`wku-invite-seat ${personAReady ? 'is-ready' : ''}`}>
-          <span>{inviteView ? 'Ta' : '你'}</span>
-          <b>{personAReady ? (inviteView ? '信息已填好' : '样本已接入') : '先填写样本'}</b>
-          <small>{personA.mood || personA.interestText || '等待生成共同体验入口'}</small>
-        </div>
-        <div className={`wku-invite-seat ${personBReady ? 'is-ready' : ''}`}>
-          <span>{inviteView ? '你' : 'Ta'}</span>
-          <b>{personBReady ? '样本已填写' : inviteView ? '等待你填写' : '等待 Ta 补全'}</b>
-          <small>{personB.mood || personB.interestText || (inviteView ? '填写后即可一起生成共振盘' : '链接会把 Ta 带到填写页')}</small>
-        </div>
       </div>
     </section>
   );
@@ -1176,7 +1165,6 @@ const WorkbenchActionsPanel: React.FC<{
     ) : (
       <InviteLinkPanel
         personA={personA}
-        personB={personB}
         inviteLink={inviteLink}
         copied={copiedId === 'match-invite-link'}
         inviteView={inviteView}
@@ -1193,6 +1181,7 @@ const WorkbenchShell: React.FC<{
   recentRuns: RecentRunRecord[];
   onToggle: () => void;
   onNavigateHome: () => void;
+  onNavigateWorkbench: () => void;
   onSelectMode: (mode: Mode) => void;
   onOpenRecent: (record: RecentRunRecord) => void;
   children: React.ReactNode;
@@ -1203,56 +1192,224 @@ const WorkbenchShell: React.FC<{
   recentRuns,
   onToggle,
   onNavigateHome,
+  onNavigateWorkbench,
   onSelectMode,
   onOpenRecent,
   children,
-}) => (
-  <div className={`wku-app-shell ${collapsed ? 'is-collapsed' : ''}`}>
-    <aside className={`wku-side-nav ${collapsed ? 'is-collapsed' : ''}`} aria-label="WKU 页面导航">
-      <button type="button" className="wku-side-toggle wku-clickable" onClick={onToggle} aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}>
-        {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-      </button>
-      <div className="wku-side-brand">
-        <span>WKU</span>
-        {!collapsed && (
-          <div>
-            <b>soul-kline</b>
-            <small>体验工作台</small>
-          </div>
-        )}
-      </div>
-      <nav className="wku-side-nav-list">
-        <button type="button" className={`wku-side-nav-item wku-clickable ${activeView === 'workbench' && mode === 'single' ? 'is-active' : ''}`} onClick={() => onSelectMode('single')}>
-          <Sparkles className="h-4 w-4" />
-          {!collapsed && <span>个人生成</span>}
+}) => {
+  const workbenchNavActive = activeView === 'workbench' || activeView === 'invite' || activeView === 'share';
+
+  return (
+    <div className={`wku-app-shell ${collapsed ? 'is-collapsed' : ''}`}>
+      <aside className={`wku-side-nav ${collapsed ? 'is-collapsed' : ''}`} aria-label="WKU 页面导航">
+        <button type="button" className="wku-side-toggle wku-clickable" onClick={onToggle} aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}>
+          {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
         </button>
-        <button type="button" className={`wku-side-nav-item wku-clickable ${activeView === 'workbench' && mode === 'match' ? 'is-active' : ''}`} onClick={() => onSelectMode('match')}>
-          <Users className="h-4 w-4" />
-          {!collapsed && <span>双人邀请</span>}
-        </button>
-        <button type="button" className={`wku-side-nav-item wku-clickable ${activeView === 'share' ? 'is-active' : ''}`} onClick={onNavigateHome}>
-          <ArrowDown className="h-4 w-4" />
-          {!collapsed && <span>返回工作台</span>}
-        </button>
-      </nav>
-      {!collapsed && (
-        <div className="wku-recent-runs">
-          <p>最近生成</p>
-          {recentRuns.length ? (
-            recentRuns.map((record) => (
-              <button key={record.id} type="button" className="wku-recent-run wku-clickable" onClick={() => onOpenRecent(record)}>
-                <b>{record.title}</b>
-                <span>{record.detail}</span>
-              </button>
-            ))
-          ) : (
-            <span className="wku-recent-empty">生成后会记录最近 5 次结果</span>
+        <div className="wku-side-brand">
+          <span>WKU</span>
+          {!collapsed && (
+            <div>
+              <b>soul-kline</b>
+              <small>体验工作台</small>
+            </div>
           )}
         </div>
-      )}
-    </aside>
-    <div className="wku-app-content">{children}</div>
-  </div>
+        <nav className="wku-side-nav-list">
+          <button type="button" className={`wku-side-nav-item wku-clickable ${activeView === 'home' ? 'is-active' : ''}`} onClick={onNavigateHome}>
+            <Home className="h-4 w-4" />
+            {!collapsed && <span>首页</span>}
+          </button>
+          <button
+            type="button"
+            className={`wku-side-nav-item wku-clickable wku-side-workbench-link ${workbenchNavActive ? 'is-active' : ''}`}
+            onClick={onNavigateWorkbench}
+            aria-label="打开 WKU 工作台"
+          >
+            <Sparkles className="h-4 w-4" />
+            {!collapsed && <span>WKU 工作台</span>}
+          </button>
+          {collapsed && (
+            <>
+              <button
+                type="button"
+                className={`wku-side-nav-item wku-clickable wku-side-collapsed-mode-button is-single ${
+                  workbenchNavActive && mode === 'single' ? 'is-active' : ''
+                }`}
+                onClick={() => onSelectMode('single')}
+                aria-label="切换到 Who Know U 单人模式"
+                title="Who Know U 单人模式"
+              >
+                <span className="wku-side-collapsed-mode-glyph is-single">
+                  <UserRound className="h-4 w-4" />
+                </span>
+              </button>
+              <button
+                type="button"
+                className={`wku-side-nav-item wku-clickable wku-side-collapsed-mode-button is-match ${
+                  workbenchNavActive && mode === 'match' ? 'is-active' : ''
+                }`}
+                onClick={() => onSelectMode('match')}
+                aria-label="切换到 Who Know Us 双人模式"
+                title="Who Know Us 双人模式"
+              >
+                <span className="wku-side-collapsed-mode-glyph is-match">
+                  <UsersRound className="h-4 w-4" />
+                </span>
+              </button>
+            </>
+          )}
+          {!collapsed && (
+            <div className={`wku-side-workbench-group ${workbenchNavActive ? 'is-active' : ''}`}>
+              <div className="wku-side-group-title" aria-label="WKU 工作台">
+                <Sparkles className="h-4 w-4" />
+                <span>WKU 工作台</span>
+                <small>模式</small>
+              </div>
+              <div className="wku-side-mode-list" aria-label="WKU 工作台模式">
+                <button
+                  type="button"
+                  className={`wku-side-mode-item wku-clickable ${workbenchNavActive && mode === 'single' ? 'is-active' : ''}`}
+                  onClick={() => onSelectMode('single')}
+                >
+                  Who Know U
+                </button>
+                <button
+                  type="button"
+                  className={`wku-side-mode-item wku-clickable ${workbenchNavActive && mode === 'match' ? 'is-active' : ''}`}
+                  onClick={() => onSelectMode('match')}
+                >
+                  Who Know Us
+                </button>
+              </div>
+            </div>
+          )}
+        </nav>
+        {!collapsed && (
+          <div className="wku-recent-runs">
+            <p>最近生成</p>
+            {recentRuns.length ? (
+              recentRuns.map((record) => (
+                <button key={record.id} type="button" className="wku-recent-run wku-clickable" onClick={() => onOpenRecent(record)}>
+                  <b>{record.title}</b>
+                  <span>{record.detail}</span>
+                </button>
+              ))
+            ) : (
+              <span className="wku-recent-empty">生成后会记录最近 5 次结果</span>
+            )}
+          </div>
+        )}
+      </aside>
+      <div className="wku-app-content">{children}</div>
+    </div>
+  );
+};
+
+const HomePage: React.FC<{
+  modeMeta: {
+    name: string;
+    short: string;
+    description: string;
+  };
+  onStart: (mode: Mode) => void;
+}> = ({ modeMeta, onStart }) => (
+  <main className="relative mx-auto max-w-[1500px] px-4 py-5 sm:px-6">
+    <section className="wku-hero wku-glass-hero wku-hero-strip overflow-hidden">
+      <div className="relative px-5 py-5 sm:px-7 lg:px-8">
+        <div className="pointer-events-none absolute inset-0 opacity-90">
+          <div className="wku-hero-aura left-[18%] top-[-18%]" />
+          <div className="wku-hero-aura right-[5%] top-[18%] is-warm" />
+        </div>
+
+        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="wku-logo-mark">
+              <Waves className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-slate-950">WKU soul-kline</p>
+              <p className="text-xs font-bold text-slate-500">Social Market Intelligence</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <span className="wku-chip wku-chip-signal">2026 元创营 Demo</span>
+            <span className="wku-chip">AI x Interest Social</span>
+            <span className="wku-chip wku-chip-dark">{modeMeta.name}</span>
+          </div>
+        </div>
+
+        <div className="wku-hero-copy-row relative z-10 mt-8">
+          <div className="wku-hero-copy max-w-[980px]">
+            <h1 className="wku-display text-4xl font-black leading-[1.02] text-slate-950 sm:text-5xl lg:text-[56px]">
+              WKU soul-kline
+            </h1>
+            <p className="wku-hero-subtitle mt-3 text-2xl font-black leading-tight text-slate-900 sm:text-[30px]">
+              谁会停下来看你，谁会再次想起你，<span>谁又真正懂你的灵魂？</span>
+            </p>
+            <p className="wku-hero-soul-line mt-3">
+              你不是不想社交，而是还没遇到那个真正懂你灵魂的人
+            </p>
+            <p className="mt-4 max-w-[68ch] text-base leading-7 text-slate-700">
+              把生日、性别、MBTI、SBTI、兴趣和真实社交样本放进 WKU。它不判断你是谁，只把陌生人从第一眼到再次想起的连接过程，画成一条可以触摸的 soul-kline。
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="wku-hero-cta wku-clickable"
+            onClick={() => onStart('single')}
+            aria-label="立即体验 WKU soul-kline"
+          >
+            <span>立即体验</span>
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="wku-hero-map mt-5">
+          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1080 360" preserveAspectRatio="none" role="img" aria-label="WKU soul-kline 横向连接曲线">
+            <defs>
+              <linearGradient id="wkuHeroStripLine" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#06b6d4" />
+                <stop offset="48%" stopColor="#14b8a6" />
+                <stop offset="100%" stopColor="#a3e635" />
+              </linearGradient>
+              <linearGradient id="wkuHeroStripArea" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.2" />
+                <stop offset="58%" stopColor="#67e8f9" stopOpacity="0.08" />
+                <stop offset="100%" stopColor="#f8fafc" stopOpacity="0" />
+              </linearGradient>
+              <filter id="wkuHeroGlow" x="-18%" y="-40%" width="136%" height="180%">
+                <feGaussianBlur stdDeviation="6" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            <path d="M58 254 C 178 186, 272 236, 362 164 C 456 88, 548 240, 646 154 C 744 68, 860 108, 1018 58 L1018 324 L58 324 Z" fill="url(#wkuHeroStripArea)" />
+            <path d="M58 254 C 178 186, 272 236, 362 164 C 456 88, 548 240, 646 154 C 744 68, 860 108, 1018 58" fill="none" stroke="rgba(15,23,42,0.08)" strokeLinecap="round" strokeWidth="24" />
+            <path className="wku-preview-line" d="M58 254 C 178 186, 272 236, 362 164 C 456 88, 548 240, 646 154 C 744 68, 860 108, 1018 58" fill="none" stroke="url(#wkuHeroStripLine)" strokeLinecap="round" strokeWidth="7" filter="url(#wkuHeroGlow)" />
+          </svg>
+
+          {lifecycleStages.map((stage, index) => (
+            <div key={stage.label} className={`wku-hero-node node-${index + 1}`}>
+              <span className="wku-mono text-[11px] font-black text-cyan-700">{String(index + 1).padStart(2, '0')}</span>
+              <p className="mt-1 text-sm font-black text-slate-950">{stage.label}</p>
+              <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">{stage.detail}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  </main>
+);
+
+const WorkbenchPage: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <main className="wku-workbench-page relative mx-auto max-w-[1500px] px-4 py-5 sm:px-6">
+    <section className="wku-experience-grid scroll-mt-5">
+      {children}
+    </section>
+  </main>
 );
 
 const SharedResultPage: React.FC<{
@@ -1298,7 +1455,7 @@ const SharedResultPage: React.FC<{
       <div className="wku-shared-result-cta">
         <div>
           <b>也看看谁会懂你</b>
-          <p>返回工作台填写你的样本，生成只属于你的 WKU soul-kline。</p>
+          <p>进入工作台填写你的样本，生成只属于你的 WKU soul-kline。</p>
         </div>
         <button type="button" className="wku-start-button wku-clickable" onClick={onStartOwn}>
           <Sparkles className="h-4 w-4" />
@@ -1364,8 +1521,10 @@ const VibeLinePage: React.FC = () => {
   const [relationshipGoal, setRelationshipGoal] = useState('想知道我们从哪里更容易自然靠近，以及哪里容易错频');
   const [result, setResult] = useState<VibeLineResult | null>(null);
   const [matchResult, setMatchResult] = useState<VibeMatchResult | null>(null);
-  const [agentStatuses, setAgentStatuses] = useState<VibeLineAgentStatusMap>(createInitialVibeLineAgentStatuses);
-  const [progress, setProgress] = useState('等待生成你的 WKU soul-kline');
+  const [singleAgentStatuses, setSingleAgentStatuses] = useState<VibeLineAgentStatusMap>(createInitialVibeLineAgentStatuses);
+  const [matchAgentStatuses, setMatchAgentStatuses] = useState<VibeLineAgentStatusMap>(createInitialVibeLineAgentStatuses);
+  const [singleProgress, setSingleProgress] = useState('等待生成你的 WKU soul-kline');
+  const [matchProgress, setMatchProgress] = useState('等待生成你们的 Who Know Us');
   const [loading, setLoading] = useState(false);
   const [matchLoading, setMatchLoading] = useState(false);
   const [error, setError] = useState('');
@@ -1384,13 +1543,17 @@ const VibeLinePage: React.FC = () => {
     [sharePayload, hashSharePayload, searchParams]
   );
   const routeInvitePayload = invitePayload || hashInvitePayload || searchParams.get('wkuInvite');
-  const activeView: AppView = sharedPayload ? 'share' : routeInvitePayload ? 'invite' : 'workbench';
+  const isWorkbenchRoute = location.pathname === '/workbench' || location.pathname === '/vibeline' || location.pathname === '/soul-kline';
+  const activeView: AppView = sharedPayload ? 'share' : routeInvitePayload ? 'invite' : isWorkbenchRoute ? 'workbench' : 'home';
+  const isHomeView = activeView === 'home';
   const inviteView = activeView === 'invite';
 
   const singleInput = useMemo(() => profileToInput(singleProfile), [singleProfile]);
   const canSubmit = singleInput.draft.trim().length >= 12 && !loading;
   const canMatch = personA.draft.trim().length >= 12 && personB.draft.trim().length >= 12 && !matchLoading;
-  const completedCount = Object.values(agentStatuses).filter((item) => item.status === 'completed').length;
+  const activeAgentStatuses = mode === 'single' ? singleAgentStatuses : matchAgentStatuses;
+  const activeProgress = mode === 'single' ? singleProgress : matchProgress;
+  const activeCompletedCount = Object.values(activeAgentStatuses).filter((item) => item.status === 'completed').length;
   const modeMeta = mode === 'single'
     ? {
         name: 'Who Know U',
@@ -1406,6 +1569,7 @@ const VibeLinePage: React.FC = () => {
   const activeCanRun = mode === 'single' ? canSubmit : canMatch;
   const activeError = mode === 'single' ? error : matchError;
   const activeActionLabel = mode === 'single' ? 'soul-kline生成' : 'Who Know Us 共振生成';
+  const activeInputTitle = mode === 'single' ? '生成我的 Who Know U' : '生成我和 TA 的 Who Know Us';
   const activeActionHint = mode === 'single'
     ? '填写你的真实社交样本，WKU 会先读懂你，再生成连接走势。'
     : '填写两个人的样本，WKU 会比较靠近路径和错频位置。';
@@ -1494,43 +1658,9 @@ const VibeLinePage: React.FC = () => {
     requestAnimationFrame(performGenerationPreviewScroll);
   };
 
-  const handleExperienceJump = contextSafe((event?: React.MouseEvent<HTMLButtonElement>) => {
-    event?.preventDefault();
-    const target = document.getElementById('wku-experience');
-    if (!target) return;
-
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduceMotion) {
-      target.scrollIntoView({ block: 'start' });
-      return;
-    }
-
-    gsap.killTweensOf([window, target]);
-    gsap.to(window, {
-      duration: EXPERIENCE_SCROLL_DURATION,
-      ease: 'power3.out',
-      scrollTo: { y: '#wku-experience', offsetY: 48 },
-      overwrite: true,
-    });
-    gsap.fromTo(
-      target,
-      { y: 10, filter: 'brightness(1.015)' },
-      {
-        y: 0,
-        filter: 'brightness(1)',
-        duration: 0.24,
-        delay: 0.04,
-        ease: 'power3.out',
-        clearProps: 'transform,filter',
-      }
-    );
-  });
-
   const handleModeChange = (nextMode: Mode) => {
     setMode(nextMode);
     setScrollIntent(null);
-    setAgentStatuses(createInitialVibeLineAgentStatuses());
-    setProgress(nextMode === 'single' ? '等待生成你的 WKU soul-kline' : '等待生成你们的 Who Know Us');
   };
 
   useEffect(() => {
@@ -1549,17 +1679,27 @@ const VibeLinePage: React.FC = () => {
     setPersonA(invitePayload.personA);
     setPersonB(normalizeInviteProfile());
     setRelationshipGoal(invitePayload.relationshipGoal);
-    setProgress('Ta 的信息已经填好，等待你填写自己的社交样本');
+    setMatchProgress('Ta 的信息已经填好，等待你填写自己的社交样本');
   }, [routeInvitePayload]);
 
-  const openWorkbench = (nextMode: Mode = 'single') => {
+  const clearHashRoute = () => {
     if (typeof window !== 'undefined' && window.location.hash) {
       window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
       setHashRoute('');
     }
+  };
+
+  const openHome = () => {
+    clearHashRoute();
     navigate('/');
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  };
+
+  const openWorkbench = (nextMode: Mode = mode) => {
+    clearHashRoute();
+    navigate('/workbench');
     handleModeChange(nextMode);
-    requestAnimationFrame(() => handleExperienceJump());
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
   };
 
   const openSharePage = () => {
@@ -1586,7 +1726,10 @@ const VibeLinePage: React.FC = () => {
   const openRecentRun = (record: RecentRunRecord) => {
     if (record.href.startsWith('/#/share/')) {
       if (typeof window !== 'undefined') {
-        window.location.href = `${window.location.origin}${record.href}`;
+        const nextHash = record.href.replace(/^\/#/, '#');
+        window.location.hash = nextHash;
+        setHashRoute(nextHash);
+        window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
       }
       return;
     }
@@ -1597,13 +1740,12 @@ const VibeLinePage: React.FC = () => {
     }
 
     handleModeChange(record.type);
-    navigate('/');
+    navigate('/workbench');
     requestAnimationFrame(() => resultSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
 
   const handleHeroModeSelect = (nextMode: Mode) => {
     handleModeChange(nextMode);
-    requestAnimationFrame(() => handleExperienceJump());
   };
 
   const startMatchFromSingle = () => {
@@ -1653,9 +1795,9 @@ const VibeLinePage: React.FC = () => {
     setLoading(true);
     setError('');
     setResult(null);
-    setProgress('正在启动 Who Know U 连接引擎');
+    setSingleProgress('正在启动 Who Know U 连接引擎');
     scrollToGenerationPreview('single');
-    setAgentStatuses(() => {
+    setSingleAgentStatuses(() => {
       const next = createInitialVibeLineAgentStatuses();
       (Object.keys(next) as VibeLineAgentType[]).forEach((type) => {
         next[type] = { ...next[type], status: 'running' };
@@ -1665,10 +1807,10 @@ const VibeLinePage: React.FC = () => {
 
     try {
       const finalResult = await analyzeVibeLine(singleInput, {
-        onProgress: setProgress,
+        onProgress: setSingleProgress,
         onPreview: setResult,
         onAgentUpdate: (agentType, status) => {
-          setAgentStatuses((prev) => ({
+          setSingleAgentStatuses((prev) => ({
             ...prev,
             [agentType]: {
               ...prev[agentType],
@@ -1679,7 +1821,8 @@ const VibeLinePage: React.FC = () => {
         },
       });
       setResult(finalResult);
-      setProgress('你的 Who Know U 已生成');
+      setSingleAgentStatuses(createAgentStatusSnapshot(ALL_AGENT_COMPLETE_STATUSES));
+      setSingleProgress('你的 Who Know U 已生成');
       const shareToken = encodeSharePayload(createSharePayload(finalResult));
       saveRecentRun({
         id: `single-${finalResult.meta.generatedAt}`,
@@ -1691,7 +1834,16 @@ const VibeLinePage: React.FC = () => {
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : '生成失败');
-      setProgress('生成中断');
+      setSingleAgentStatuses((prev) => {
+        const next = { ...prev };
+        VIBE_AGENT_ORDER.forEach((type) => {
+          if (next[type].status !== 'completed') {
+            next[type] = { ...next[type], status: 'failed' };
+          }
+        });
+        return next;
+      });
+      setSingleProgress('生成中断');
     } finally {
       setLoading(false);
       setScrollIntent(null);
@@ -1703,9 +1855,9 @@ const VibeLinePage: React.FC = () => {
     setMatchLoading(true);
     setMatchError('');
     setMatchResult(null);
-    setProgress('正在启动 Who Know Us 共振引擎');
+    setMatchProgress('正在启动 Who Know Us 共振引擎');
     scrollToGenerationPreview('match');
-    setAgentStatuses(createAgentStatusSnapshot(MATCH_AGENT_PHASES.start));
+    setMatchAgentStatuses(createAgentStatusSnapshot(MATCH_AGENT_PHASES.start));
 
     try {
       const finalResult = await analyzeVibeMatch(
@@ -1716,17 +1868,17 @@ const VibeLinePage: React.FC = () => {
         },
         {
           onProgress: (message) => {
-            setProgress(message);
+            setMatchProgress(message);
             if (message.includes('计算') || message.includes('错频')) {
-              setAgentStatuses(createAgentStatusSnapshot(MATCH_AGENT_PHASES.match));
+              setMatchAgentStatuses(createAgentStatusSnapshot(MATCH_AGENT_PHASES.match));
             }
           },
           onPreview: (preview) => {
             setMatchResult(preview);
-            setAgentStatuses(createAgentStatusSnapshot(MATCH_AGENT_PHASES.preview));
+            setMatchAgentStatuses(createAgentStatusSnapshot(MATCH_AGENT_PHASES.preview));
           },
           onAgentUpdate: (agentType, status) => {
-            setAgentStatuses((prev) => ({
+            setMatchAgentStatuses((prev) => ({
               ...prev,
               [agentType]: {
                 ...prev[agentType],
@@ -1738,8 +1890,8 @@ const VibeLinePage: React.FC = () => {
         }
       );
       setMatchResult(finalResult);
-      setAgentStatuses(createAgentStatusSnapshot(MATCH_AGENT_PHASES.complete));
-      setProgress('你们的 Who Know Us 已生成');
+      setMatchAgentStatuses(createAgentStatusSnapshot(ALL_AGENT_COMPLETE_STATUSES));
+      setMatchProgress('你们的 Who Know Us 已生成');
       saveRecentRun({
         id: `match-${finalResult.meta.generatedAt}`,
         type: 'match',
@@ -1750,7 +1902,7 @@ const VibeLinePage: React.FC = () => {
       });
     } catch (err) {
       setMatchError(err instanceof Error ? err.message : '生成失败');
-      setAgentStatuses((prev) => {
+      setMatchAgentStatuses((prev) => {
         const next = { ...prev };
         VIBE_AGENT_ORDER.forEach((type) => {
           if (next[type].status !== 'completed') {
@@ -1759,7 +1911,7 @@ const VibeLinePage: React.FC = () => {
         });
         return next;
       });
-      setProgress('双人共振生成中断');
+      setMatchProgress('双人共振生成中断');
     } finally {
       setMatchLoading(false);
       setScrollIntent(null);
@@ -1785,121 +1937,43 @@ const VibeLinePage: React.FC = () => {
         collapsed={sidebarCollapsed}
         recentRuns={recentRuns}
         onToggle={() => setSidebarCollapsed((prev) => !prev)}
-        onNavigateHome={() => openWorkbench('single')}
-        onSelectMode={(nextMode) => openWorkbench(nextMode)}
+        onNavigateHome={openHome}
+        onNavigateWorkbench={() => openWorkbench(mode)}
+        onSelectMode={openWorkbench}
         onOpenRecent={openRecentRun}
       >
         {sharedPayload ? (
           <main className="relative mx-auto max-w-[1320px] px-4 py-5 sm:px-6">
             <SharedResultPage payload={sharedPayload} onStartOwn={() => openWorkbench('single')} />
           </main>
+        ) : isHomeView ? (
+          <HomePage
+            modeMeta={modeMeta}
+            onStart={openWorkbench}
+          />
         ) : (
-      <main className="relative mx-auto max-w-[1500px] px-4 py-5 sm:px-6">
-        <section className="wku-hero wku-glass-hero wku-hero-strip mb-4 overflow-hidden">
-          <div className="relative px-5 py-5 sm:px-7 lg:px-8">
-            <div className="pointer-events-none absolute inset-0 opacity-90">
-              <div className="wku-hero-aura left-[18%] top-[-18%]" />
-              <div className="wku-hero-aura right-[5%] top-[18%] is-warm" />
-            </div>
-
-            <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-center gap-3">
-                <div className="wku-logo-mark">
-                  <Waves className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-black text-slate-950">WKU soul-kline</p>
-                  <p className="text-xs font-bold text-slate-500">Social Market Intelligence</p>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <span className="wku-chip wku-chip-signal">2026 元创营 Demo</span>
-                <span className="wku-chip">AI x Interest Social</span>
-                <span className="wku-chip wku-chip-dark">{modeMeta.name}</span>
-              </div>
-            </div>
-
-            <div className="wku-hero-copy-row relative z-10 mt-8">
-              <div className="wku-hero-copy max-w-[980px]">
-                <h1 className="wku-display text-4xl font-black leading-[1.02] text-slate-950 sm:text-5xl lg:text-[56px]">
-                    WKU soul-kline
-                </h1>
-                <p className="wku-hero-subtitle mt-3 text-2xl font-black leading-tight text-slate-900 sm:text-[30px]">
-                  谁会停下来看你，谁会再次想起你，<span>谁又真正懂你的灵魂？</span>
-                </p>
-                <p className="wku-hero-soul-line mt-3">
-                  你不是不想社交，而是还没遇到那个真正懂你灵魂的人
-                </p>
-                <p className="mt-4 max-w-[68ch] text-base leading-7 text-slate-700">
-                  把生日、性别、MBTI、SBTI、兴趣和真实社交样本放进 WKU。它不判断你是谁，只把陌生人从第一眼到再次想起的连接过程，画成一条可以触摸的 soul-kline。
-                </p>
-                <HeroModeSwitch mode={mode} onSelectMode={handleHeroModeSelect} />
-              </div>
-
-              <button
-                type="button"
-                className="wku-hero-cta wku-clickable"
-                onClick={handleExperienceJump}
-                aria-label="立即体验 WKU soul-kline"
-              >
-                <span>立即体验</span>
-                <ArrowDown className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="wku-hero-map mt-5">
-              <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1080 360" preserveAspectRatio="none" role="img" aria-label="WKU soul-kline 横向连接曲线">
-                <defs>
-                  <linearGradient id="wkuHeroStripLine" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#06b6d4" />
-                    <stop offset="48%" stopColor="#14b8a6" />
-                    <stop offset="100%" stopColor="#a3e635" />
-                  </linearGradient>
-                  <linearGradient id="wkuHeroStripArea" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.2" />
-                    <stop offset="58%" stopColor="#67e8f9" stopOpacity="0.08" />
-                    <stop offset="100%" stopColor="#f8fafc" stopOpacity="0" />
-                  </linearGradient>
-                  <filter id="wkuHeroGlow" x="-18%" y="-40%" width="136%" height="180%">
-                    <feGaussianBlur stdDeviation="6" result="blur" />
-                    <feMerge>
-                      <feMergeNode in="blur" />
-                      <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                  </filter>
-                </defs>
-                <path d="M58 254 C 178 186, 272 236, 362 164 C 456 88, 548 240, 646 154 C 744 68, 860 108, 1018 58 L1018 324 L58 324 Z" fill="url(#wkuHeroStripArea)" />
-                <path d="M58 254 C 178 186, 272 236, 362 164 C 456 88, 548 240, 646 154 C 744 68, 860 108, 1018 58" fill="none" stroke="rgba(15,23,42,0.08)" strokeLinecap="round" strokeWidth="24" />
-                <path className="wku-preview-line" d="M58 254 C 178 186, 272 236, 362 164 C 456 88, 548 240, 646 154 C 744 68, 860 108, 1018 58" fill="none" stroke="url(#wkuHeroStripLine)" strokeLinecap="round" strokeWidth="7" filter="url(#wkuHeroGlow)" />
-              </svg>
-
-              {lifecycleStages.map((stage, index) => (
-                <div key={stage.label} className={`wku-hero-node node-${index + 1}`}>
-                  <span className="wku-mono text-[11px] font-black text-cyan-700">{String(index + 1).padStart(2, '0')}</span>
-                  <p className="mt-1 text-sm font-black text-slate-950">{stage.label}</p>
-                  <p className="mt-1 text-xs font-semibold leading-5 text-slate-600">{stage.detail}</p>
-                </div>
-              ))}
-
-            </div>
-          </div>
-        </section>
-
-        <section id="wku-experience" className="wku-experience-grid scroll-mt-5">
+          <WorkbenchPage>
           <div className="wku-workbench wku-mode-bar">
             <div className="wku-workbench-header">
               <div>
-                <p className="text-xs font-black text-teal-700">WKU 体验工作台</p>
-                <h2 className="mt-1 text-2xl font-black text-slate-950">先读样本，再看连接曲线</h2>
+                <p className="text-xs font-black text-teal-700">WKU 输入台</p>
+                <h2 className="mt-1 text-2xl font-black text-slate-950">{activeInputTitle}</h2>
+                <p className="mt-1 max-w-[68ch] text-sm font-semibold leading-6 text-slate-600">{activeLoading ? activeProgress : activeActionHint}</p>
               </div>
-              <div className="wku-workbench-steps" aria-label="当前使用流程">
-                <span>选镜头</span>
-                <span>填样本</span>
-                <span>生成后看结果</span>
+              <div className="wku-input-actions">
+                <span className="wku-input-status">{activeResultReady ? '已生成' : activeLoading ? '生成中' : '待生成'}</span>
+                <button
+                  type="button"
+                  onClick={mode === 'single' ? runAnalyze : runMatch}
+                  disabled={!activeCanRun || activeLoading}
+                  className="wku-start-button wku-clickable"
+                  aria-label={`${generateButtonLabel}，预计 ${activeGenerationEstimate}`}
+                >
+                  {activeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {generateButtonLabel}
+                </button>
               </div>
             </div>
-
-            <ModeChoiceCards mode={mode} onChange={handleModeChange} />
 
             <div className="wku-workbench-body">
               <aside className="wku-lens-desk">
@@ -1962,16 +2036,16 @@ const VibeLinePage: React.FC = () => {
 
                 {activeLoading ? (
                   <AgentHandoffCard
-                    completedCount={completedCount}
-                    progress={progress}
+                    completedCount={activeCompletedCount}
+                    progress={activeProgress}
                     mode={mode}
                     onJump={() => resultSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                   />
                 ) : (
                   <AgentConsole
-                    statusMap={agentStatuses}
-                    completedCount={completedCount}
-                    progress={progress}
+                    statusMap={activeAgentStatuses}
+                    completedCount={activeCompletedCount}
+                    progress={activeProgress}
                     mode={mode}
                   />
                 )}
@@ -1991,27 +2065,6 @@ const VibeLinePage: React.FC = () => {
               </aside>
 
               <section className="wku-input-deck">
-                <div className="wku-input-deck-head">
-                  <div>
-                    <p className="text-xs font-black text-teal-700">WKU 输入台</p>
-                    <h3 className="mt-1 text-xl font-black text-slate-950">{mode === 'single' ? '生成我的 Who Know U' : '生成我和 TA 的 Who Know Us'}</h3>
-                    <p className="mt-1 text-sm font-semibold leading-6 text-slate-600">{activeLoading ? progress : activeActionHint}</p>
-                  </div>
-                  <div className="wku-input-actions">
-                    <span className="wku-input-status">{activeResultReady ? '已生成' : activeLoading ? '生成中' : '待生成'}</span>
-                    <button
-                      type="button"
-                      onClick={mode === 'single' ? runAnalyze : runMatch}
-                      disabled={!activeCanRun || activeLoading}
-                      className="wku-start-button wku-clickable wku-start-button-head"
-                      aria-label={`${generateButtonLabel}，预计 ${activeGenerationEstimate}`}
-                    >
-                      {activeLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                      {generateButtonLabel}
-                    </button>
-                  </div>
-                </div>
-
                 <div className="wku-mode-content">
                   {mode === 'single' ? (
                     <div className="wku-single-form-shell">
@@ -2103,9 +2156,9 @@ const VibeLinePage: React.FC = () => {
                 <VibeLineChart
                   data={result?.kline || []}
                   loading={loading}
-                  loadingText={progress}
+                  loadingText={singleProgress}
                   modeLabel="Who Know U"
-                  agentStatuses={agentStatuses}
+                  agentStatuses={singleAgentStatuses}
                   modelLabel={AI_MODEL_LABEL}
                   estimateText={activeGenerationEstimate}
                 />
@@ -2229,9 +2282,9 @@ const VibeLinePage: React.FC = () => {
                   <VibeLineChart
                     data={matchResult?.resonanceKline || []}
                     loading={matchLoading}
-                    loadingText={progress}
+                    loadingText={matchProgress}
                     modeLabel="Who Know Us"
-                    agentStatuses={agentStatuses}
+                    agentStatuses={matchAgentStatuses}
                     modelLabel={AI_MODEL_LABEL}
                     estimateText={activeGenerationEstimate}
                   />
@@ -2341,8 +2394,7 @@ const VibeLinePage: React.FC = () => {
               </>
             )}
           </section>
-        </section>
-      </main>
+          </WorkbenchPage>
         )}
       </WorkbenchShell>
     </div>

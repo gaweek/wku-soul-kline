@@ -21,7 +21,8 @@ test('loading chart carries the current generation status copy', () => {
   assert.match(chartSource, /loadingText\?: string/);
   assert.match(chartSource, /正在生成读盘/);
   assert.match(chartSource, /role="status"/);
-  assert.match(pageSource, /loadingText=\{progress\}/);
+  assert.match(pageSource, /loadingText=\{singleProgress\}/);
+  assert.match(pageSource, /loadingText=\{matchProgress\}/);
 });
 
 test('generation state makes the AI model and estimated wait visible', () => {
@@ -52,12 +53,9 @@ test('loading chart uses a stronger animated signal with reduced motion fallback
 test('generation actions scroll to the preview chart with GSAP feedback', () => {
   assert.match(pageSource, /ScrollToPlugin/);
   assert.match(pageSource, /GENERATION_SCROLL_DURATION/);
-  assert.match(pageSource, /EXPERIENCE_SCROLL_DURATION/);
   assert.match(pageSource, /scrollToGenerationPreview/);
   assert.match(pageSource, /requestAnimationFrame\(performGenerationPreviewScroll\)/);
   assert.match(pageSource, /scrollTo:\s*\{\s*y:\s*target/);
-  assert.match(pageSource, /handleExperienceJump/);
-  assert.match(pageSource, /scrollTo:\s*\{\s*y:\s*'#wku-experience'/);
   assert.match(pageSource, /scrollToGenerationPreview\('single'\)/);
   assert.match(pageSource, /scrollToGenerationPreview\('match'\)/);
   assert.match(pageSource, /wku-generation-scroll-note/);
@@ -103,7 +101,10 @@ test('match mode supports a two-person invite link flow', () => {
   assert.match(pageSource, /setPersonA\(invitePayload\.personA\)/);
   assert.match(pageSource, /setPersonB\(normalizeInviteProfile\(\)\)/);
   assert.match(cssSource, /wku-invite-panel/);
-  assert.match(cssSource, /wku-invite-seat-grid/);
+  assert.equal(pageSource.includes('wku-invite-seat-grid'), false);
+  assert.equal(pageSource.includes('wku-invite-seat'), false);
+  assert.equal(cssSource.includes('wku-invite-seat-grid'), false);
+  assert.equal(cssSource.includes('wku-invite-seat'), false);
   assert.equal(pageSource.includes('wku-invite-url'), false);
   assert.equal(cssSource.includes('wku-invite-url'), false);
 });
@@ -123,52 +124,121 @@ test('app shell separates workbench share and invite pages with a collapsible si
   assert.match(cssSource, /wku-workbench-actions/);
 });
 
-test('mode discovery is promoted as two equal analysis choices', () => {
-  assert.match(pageSource, /ModeChoiceCards/);
-  assert.match(pageSource, /HeroModeSwitch/);
-  assert.match(pageSource, /handleHeroModeSelect/);
-  assert.match(pageSource, /wku-mode-switch-grid/);
-  assert.match(pageSource, /wku-mode-switch-card/);
-  assert.match(pageSource, /wku-mode-switch-action/);
-  assert.match(pageSource, /当前：\{activeMode\.title\}/);
-  assert.match(pageSource, /这次要分析哪条连接 K 线/);
-  assert.match(pageSource, /模式切换/);
-  assert.match(pageSource, /我想分析自己/);
-  assert.match(pageSource, /我想分析我和 TA/);
-  assert.match(pageSource, /支持单人读盘 \/ 双人共振/);
-  assert.match(pageSource, /双人模式/);
-  assert.match(cssSource, /wku-hero-mode-switch/);
-  assert.match(cssSource, /wku-mode-choice-panel/);
-  assert.match(cssSource, /wku-mode-choice-panel\.is-prominent/);
+test('home and workbench are separate routed pages instead of one vertical scroller', () => {
+  assert.match(appSource, /path="\/workbench"/);
+  assert.match(pageSource, /HomePage/);
+  assert.match(pageSource, /WorkbenchPage/);
+  assert.match(pageSource, /isHomeView/);
+  assert.match(pageSource, /navigate\('\/workbench'\)/);
+  assert.match(pageSource, /首页/);
+  assert.match(pageSource, /WKU 工作台/);
+  assert.equal(pageSource.includes('onNavigateHome={() => openWorkbench'), false);
+  assert.equal(pageSource.includes('返回工作台'), false);
+  assert.equal(pageSource.includes('id="wku-experience"'), false);
+  assert.equal(pageSource.includes("scrollTo: { y: '#wku-experience'"), false);
 });
 
-test('workbench mode switch stays visible without becoming a bulky card area', () => {
+test('sidebar owns workbench mode switching and stays fixed while content scrolls', () => {
+  assert.match(pageSource, /wku-side-workbench-group/);
+  assert.match(pageSource, /wku-side-group-title/);
+  assert.match(pageSource, /wku-side-workbench-link/);
+  assert.match(pageSource, /wku-side-collapsed-mode-button/);
+  assert.match(pageSource, /wku-side-mode-list/);
+  assert.match(pageSource, /wku-side-mode-item/);
+  assert.match(pageSource, /onSelectMode\('single'\)/);
+  assert.match(pageSource, /onSelectMode\('match'\)/);
+  assert.equal(pageSource.includes("className={`wku-side-nav-item wku-clickable ${activeView === 'workbench'"), false);
+  assert.equal(pageSource.includes('<ModeChoiceCards mode={mode}'), false);
+  assert.match(cssSource, /wku-side-nav\s*\{[\s\S]*position:\s*fixed/);
+  assert.match(cssSource, /wku-app-shell\s*\{[\s\S]*grid-template-columns:\s*1fr/);
+  assert.match(cssSource, /wku-app-content\s*\{[\s\S]*margin-left:\s*220px/);
+  assert.match(cssSource, /wku-app-shell\.is-collapsed\s+\.wku-app-content/);
+  assert.match(cssSource, /wku-side-mode-list/);
+});
+
+test('sidebar workbench parent is a non-clickable group and modes are the clear actions', () => {
+  assert.match(pageSource, /<div className=\{`wku-side-workbench-group/);
+  assert.match(pageSource, /<div className="wku-side-group-title"/);
+  assert.match(pageSource, /<button[\s\S]*className=\{`wku-side-mode-item wku-clickable/);
+  assert.match(cssSource, /wku-side-workbench-group/);
+  assert.match(cssSource, /wku-side-group-title/);
+  assert.match(cssSource, /wku-side-nav\s+\.wku-side-workbench-link\s*\{[\s\S]*display:\s*none/);
+  assert.match(cssSource, /wku-side-nav\.is-collapsed\s+\.wku-side-workbench-link\s*\{[\s\S]*display:\s*none/);
+});
+
+test('collapsed sidebar exposes three clear icon buttons for home single and match modes', () => {
+  assert.match(pageSource, /UserRound/);
+  assert.match(pageSource, /UsersRound/);
+  assert.match(pageSource, /aria-label="切换到 Who Know U 单人模式"/);
+  assert.match(pageSource, /aria-label="切换到 Who Know Us 双人模式"/);
+  assert.match(pageSource, /wku-side-collapsed-mode-glyph/);
+  assert.match(pageSource, /wku-side-collapsed-mode-button is-single/);
+  assert.match(pageSource, /wku-side-collapsed-mode-button is-match/);
+  assert.match(cssSource, /wku-side-nav\.is-collapsed\s+\.wku-side-collapsed-mode-button\s*\{[\s\S]*display:\s*inline-flex/);
+  assert.match(cssSource, /wku-side-collapsed-mode-glyph\.is-single/);
+  assert.match(cssSource, /wku-side-collapsed-mode-glyph\.is-match/);
+});
+
+test('home view does not highlight workbench mode buttons', () => {
+  assert.match(pageSource, /const workbenchNavActive = activeView === 'workbench' \|\| activeView === 'invite' \|\| activeView === 'share'/);
+  assert.match(pageSource, /workbenchNavActive \? 'is-active' : ''/);
+  assert.match(pageSource, /workbenchNavActive && mode === 'single'/);
+  assert.match(pageSource, /workbenchNavActive && mode === 'match'/);
+  assert.equal(pageSource.includes("wku-side-mode-item wku-clickable ${mode === 'single' ? 'is-active' : ''}"), false);
+});
+
+test('home keeps the original hero without an embedded mode switch', () => {
+  assert.equal(pageSource.includes('<HeroModeSwitch mode={mode}'), false);
+  assert.equal(pageSource.includes('onSelectMode={handleHeroModeSelect}'), false);
+  assert.equal(pageSource.includes('onStart(mode)'), false);
+  assert.match(pageSource, /onStart\('single'\)/);
+  assert.match(pageSource, /立即体验/);
+});
+
+test('workbench mode switching is only exposed in the fixed sidebar', () => {
   assert.equal(pageSource.includes('wku-mode-choice-card'), false);
   assert.equal(pageSource.includes('wku-mode-choice-grid'), false);
   assert.equal(pageSource.includes('wku-choice-action'), false);
-  assert.match(pageSource, /wku-mode-switch-grid/);
-  assert.match(cssSource, /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
-  assert.match(cssSource, /min-height:\s*82px/);
+  assert.equal(pageSource.includes('<ModeChoiceCards mode={mode}'), false);
+  assert.match(pageSource, /wku-side-mode-list/);
+  assert.match(cssSource, /wku-side-mode-list/);
 });
 
-test('inactive mode cards have a refined animated border affordance', () => {
-  assert.match(pageSource, /modeSwitchRef/);
-  assert.match(pageSource, /gsap\.matchMedia/);
-  assert.match(pageSource, /prefers-reduced-motion: reduce/);
-  assert.match(pageSource, /wku-mode-switch-orbit/);
-  assert.match(pageSource, /wku-mode-switch-card:not\(\.is-active\) \.wku-mode-switch-orbit/);
-  assert.match(cssSource, /wku-mode-switch-orbit/);
-  assert.match(cssSource, /conic-gradient/);
-  assert.match(cssSource, /mask-composite:\s*exclude/);
-  assert.match(cssSource, /wku-mode-switch-card:not\(\.is-active\)/);
-  assert.match(cssSource, /will-change:\s*transform,\s*opacity/);
+test('workbench title owns the input deck heading and the form starts immediately', () => {
+  assert.match(pageSource, /const activeInputTitle = mode === 'single'/);
+  assert.match(pageSource, /WKU 输入台/);
+  assert.match(pageSource, /\{activeInputTitle\}/);
+  assert.match(pageSource, /\{activeLoading \? activeProgress : activeActionHint\}/);
+  assert.match(pageSource, /<div className="wku-workbench-header">[\s\S]*wku-input-actions[\s\S]*<\/div>[\s\S]*<div className="wku-workbench-body">/);
+  assert.equal(pageSource.includes('className="wku-input-deck-head"'), false);
+  assert.equal(pageSource.includes('wku-start-button-head'), false);
+  assert.match(cssSource, /wku-input-deck\s*\{[\s\S]*padding:\s*0/);
+});
+
+test('sidebar active states use the dark rendered mode card treatment', () => {
+  assert.match(cssSource, /wku-side-nav-item:hover/);
+  assert.match(cssSource, /wku-side-mode-item:hover/);
+  assert.match(cssSource, /wku-side-mode-item\.is-active[\s\S]*linear-gradient\(180deg,\s*#0f172a/);
+  assert.match(cssSource, /wku-side-mode-item\.is-active[\s\S]*color:\s*#ecfeff/);
+  assert.match(cssSource, /wku-side-mode-item\.is-active::after/);
+  assert.match(cssSource, /transform:\s*translateX\(2px\)/);
+  assert.match(cssSource, /transition:\s*transform 180ms/);
+});
+
+test('recent share records open through in-app hash state without a full reload', () => {
+  assert.match(pageSource, /record\.href\.startsWith\('\/#\/share\/'\)/);
+  assert.match(pageSource, /const nextHash = record\.href\.replace/);
+  assert.match(pageSource, /setHashRoute\(nextHash\)/);
+  assert.equal(pageSource.includes('window.location.href = `${window.location.origin}${record.href}`'), false);
+  assert.match(pageSource, /RECENT_RUNS_STORAGE_KEY/);
+  assert.match(pageSource, /window\.localStorage/);
 });
 
 test('interactive controls use a shared clickable affordance system', () => {
   assert.match(cssSource, /wku-clickable/);
   assert.match(cssSource, /\.wku-page button:not\(:disabled\)/);
   assert.match(pageSource, /className="wku-hero-cta wku-clickable"/);
-  assert.match(pageSource, /className=\{`wku-mode-switch-card wku-clickable/);
+  assert.match(pageSource, /className=\{`wku-side-mode-item wku-clickable/);
   assert.match(pageSource, /className="wku-sample-chip wku-clickable"/);
   assert.match(pageSource, /type="button"[\s\S]*className="wku-start-button wku-clickable/);
 });
@@ -208,13 +278,21 @@ test('scores are explained where users see them', () => {
   assert.match(cssSource, /wku-score-section-title/);
 });
 
-test('hero layout keeps the first screen compact and makes the primary CTA obvious', () => {
+test('home layout keeps the original hero and makes the workbench CTA obvious', () => {
+  assert.match(pageSource, /wku-hero wku-glass-hero wku-hero-strip/);
   assert.match(pageSource, /max-w-\[980px\]/);
+  assert.match(pageSource, /立即体验/);
+  assert.match(pageSource, /onStart\('single'\)/);
   assert.match(pageSource, /lg:text-\[56px\]/);
   assert.match(pageSource, /sm:text-\[30px\]/);
+  assert.equal(cssSource.includes('white-space: nowrap;\\n    text-wrap: normal;'), false);
+  assert.match(cssSource, /wku-hero-subtitle\s*\{[\s\S]*text-wrap:\s*balance/);
+  assert.match(cssSource, /wku-hero-cta\s*\{[\s\S]*justify-self:\s*center/);
   assert.match(cssSource, /grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(220px,\s*320px\)/);
   assert.match(cssSource, /min-height:\s*64px/);
-  assert.match(cssSource, /min-height:\s*clamp\(260px,\s*32vh,\s*340px\)/);
+  assert.equal(cssSource.includes('min-height: calc(100svh - 40px)'), false);
+  assert.equal(cssSource.includes('grid-template-rows: auto minmax(420px, 1fr)'), false);
+  assert.match(cssSource, /wku-hero-map\s*\{[\s\S]*min-height:\s*clamp\(340px,\s*38svh,\s*460px\)/);
 });
 
 test('loading preview carries the six agent progress beside the chart', () => {
@@ -224,7 +302,8 @@ test('loading preview carries the six agent progress beside the chart', () => {
   assert.match(chartSource, /wku-loading-agent-panel/);
   assert.match(chartSource, /item\.status === 'running' && \(/);
   assert.match(chartSource, /wku-loading-agent-spinner/);
-  assert.match(pageSource, /agentStatuses=\{agentStatuses\}/);
+  assert.match(pageSource, /agentStatuses=\{singleAgentStatuses\}/);
+  assert.match(pageSource, /agentStatuses=\{matchAgentStatuses\}/);
   assert.match(cssSource, /wku-loading-agent-panel/);
   assert.match(cssSource, /@keyframes wkuAgentSpin/);
   assert.match(cssSource, /wku-loading-agent-spinner/);
@@ -236,6 +315,32 @@ test('active generation uses preview as the only full agent progress surface', (
   assert.match(pageSource, /进度已同步到预览盘/);
   assert.match(pageSource, /activeLoading\s*\?\s*\(\s*<AgentHandoffCard[\s\S]*\)\s*:\s*\(\s*<AgentConsole/);
   assert.match(cssSource, /wku-agent-handoff/);
+});
+
+test('single and match agent progress stay isolated across mode switches and completion', () => {
+  assert.match(pageSource, /ALL_AGENT_COMPLETE_STATUSES/);
+  assert.match(pageSource, /singleAgentStatuses/);
+  assert.match(pageSource, /matchAgentStatuses/);
+  assert.match(pageSource, /singleProgress/);
+  assert.match(pageSource, /matchProgress/);
+  assert.match(pageSource, /activeAgentStatuses/);
+  assert.match(pageSource, /activeProgress/);
+  assert.match(pageSource, /activeCompletedCount/);
+  assert.equal(pageSource.includes('const [agentStatuses, setAgentStatuses]'), false);
+  assert.equal(pageSource.includes('const [progress, setProgress]'), false);
+  assert.equal(pageSource.includes('setAgentStatuses(createInitialVibeLineAgentStatuses())'), false);
+  assert.match(pageSource, /setSingleAgentStatuses\(createAgentStatusSnapshot\(ALL_AGENT_COMPLETE_STATUSES\)\)/);
+  assert.match(pageSource, /setMatchAgentStatuses\(createAgentStatusSnapshot\(ALL_AGENT_COMPLETE_STATUSES\)\)/);
+  assert.match(pageSource, /AgentConsole[\s\S]*statusMap=\{activeAgentStatuses\}/);
+  assert.match(pageSource, /VibeLineChart[\s\S]*agentStatuses=\{singleAgentStatuses\}/);
+  assert.match(pageSource, /VibeLineChart[\s\S]*agentStatuses=\{matchAgentStatuses\}/);
+});
+
+test('generating preview does not add a large blank spacer below the chart', () => {
+  assert.match(pageSource, /wku-result-block space-y-5 scroll-mt-5 \$\{activeLoading \? 'is-generating' : ''\}/);
+  assert.match(cssSource, /wku-result-block\.is-generating/);
+  assert.equal(cssSource.includes('padding-bottom: clamp(280px, 38vh, 430px)'), false);
+  assert.match(cssSource, /wku-result-block\.is-generating\s*\{[\s\S]*padding-bottom:\s*clamp\(16px,\s*4vh,\s*36px\)/);
 });
 
 test('generated results render directly without an expand gate', () => {

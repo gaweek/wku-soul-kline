@@ -18,11 +18,13 @@ test('Who Know U analyzer measures elapsed after reading completion body', () =>
   assert.equal(successElapsedIndex > jsonIndex, true);
 });
 
-test('Who Know U analyzer keeps single generation on a short response budget', () => {
+test('Who Know U analyzer does not abort agents when generation exceeds the display estimate', () => {
   const source = readFileSync(new URL('../server/vibelineAnalyzer.js', import.meta.url), 'utf8');
 
-  assert.match(source, /FAST_SINGLE_AGENT_TIMEOUT_MS\s*=\s*22000/);
-  assert.match(source, /timeoutMs = FAST_SINGLE_AGENT_TIMEOUT_MS/);
+  assert.equal(source.includes('FAST_SINGLE_AGENT_TIMEOUT_MS'), false);
+  assert.equal(source.includes('new AbortController()'), false);
+  assert.equal(source.includes('setTimeout(() => controller.abort()'), false);
+  assert.equal(source.includes('signal: controller.signal'), false);
 });
 
 test('Who Know Us analyzer gives lifecycle kline agent extra time and a retry', () => {

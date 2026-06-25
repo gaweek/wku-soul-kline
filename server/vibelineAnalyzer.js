@@ -17,7 +17,6 @@ const DEFAULT_MODEL = getProviderDefaultModel(
   process.env.DEFAULT_MODEL,
   'gemini-3-pro-preview'
 );
-const FAST_SINGLE_AGENT_TIMEOUT_MS = 22000;
 
 const sendSSE = (res, event, data) => {
   if (!res.writableEnded) {
@@ -43,13 +42,11 @@ const parseJsonObject = (content = '') => {
   return JSON.parse(clean);
 };
 
-const requestAgent = async (agent, input, partialState, timeoutMs = FAST_SINGLE_AGENT_TIMEOUT_MS) => {
+const requestAgent = async (agent, input, partialState) => {
   if (!DEFAULT_API_KEY) {
     return { success: false, agentType: agent.type, error: 'MISSING_API_KEY' };
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   const startedAt = Date.now();
 
   try {
@@ -59,7 +56,6 @@ const requestAgent = async (agent, input, partialState, timeoutMs = FAST_SINGLE_
         'Content-Type': 'application/json',
         Authorization: `Bearer ${DEFAULT_API_KEY}`,
       },
-      signal: controller.signal,
       body: JSON.stringify({
         model: DEFAULT_MODEL,
         messages: [
@@ -72,7 +68,6 @@ const requestAgent = async (agent, input, partialState, timeoutMs = FAST_SINGLE_
 
     if (!response.ok) {
       const body = await response.text();
-      clearTimeout(timeoutId);
       const elapsed = `${((Date.now() - startedAt) / 1000).toFixed(1)}s`;
       return {
         success: false,
@@ -83,7 +78,6 @@ const requestAgent = async (agent, input, partialState, timeoutMs = FAST_SINGLE_
     }
 
     const json = await response.json();
-    clearTimeout(timeoutId);
     const elapsed = `${((Date.now() - startedAt) / 1000).toFixed(1)}s`;
     const content = json.choices?.[0]?.message?.content;
     if (!content) {
@@ -98,11 +92,11 @@ const requestAgent = async (agent, input, partialState, timeoutMs = FAST_SINGLE_
       elapsed,
     };
   } catch (error) {
-    clearTimeout(timeoutId);
     return {
       success: false,
       agentType: agent.type,
-      error: error.name === 'AbortError' ? 'TIMEOUT' : error.message,
+      error: error.message,
+      elapsed: `${((Date.now() - startedAt) / 1000).toFixed(1)}s`,
     };
   }
 };
