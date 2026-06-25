@@ -414,9 +414,24 @@ const getHashPayload = (hash: string, route: 'share' | 'invite') => {
   return hash.slice(prefix.length) || null;
 };
 
-const buildShareHref = (payload: string) => `/share/${payload}`;
+const buildShareHref = (payload: string) => `/#/share/${payload}`;
 const buildInviteHref = (payload: string) => `/#/invite/${payload}`;
-const normalizeRecentShareHref = (href: string) => (href.startsWith('/#/share/') ? href.replace('/#', '') : href);
+const normalizeRecentShareHref = (href: string) => {
+  let localHref = href;
+
+  if (/^https?:\/\//.test(href)) {
+    try {
+      const url = new URL(href);
+      localHref = `${url.pathname}${url.hash}`;
+    } catch {
+      localHref = href;
+    }
+  }
+
+  if (localHref.startsWith('/#/share/')) return localHref;
+  if (localHref.startsWith('/share/')) return localHref.replace('/share/', '/#/share/');
+  return localHref;
+};
 const getAbsoluteShareLink = (href: string) => {
   const path = normalizeRecentShareHref(href);
   if (typeof window === 'undefined' || /^https?:\/\//.test(path)) return path;
@@ -1836,9 +1851,16 @@ const VibeLinePage: React.FC = () => {
   const openSharePage = () => {
     if (!singleShareLink) return;
 
-    const nextPath = new URL(singleShareLink).pathname;
+    openShareHref(singleShareLink);
+  };
+
+  const openShareHref = (href: string) => {
+    const nextHref = normalizeRecentShareHref(href);
+    const nextPathname = nextHref.split('#')[0] || '/';
+    const nextHash = nextHref.includes('#') ? `#${nextHref.split('#')[1]}` : '';
     clearHashRoute();
-    navigate(nextPath);
+    navigate({ pathname: nextPathname, hash: nextHash });
+    setHashRoute(nextHash);
     window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
   };
 
@@ -1874,15 +1896,7 @@ const VibeLinePage: React.FC = () => {
 
   const openRecentRun = (record: RecentRunRecord) => {
     if (record.href.startsWith('/share/') || record.href.startsWith('/#/share/')) {
-      const nextPath = normalizeRecentShareHref(record.href);
-      clearHashRoute();
-      navigate(nextPath);
-      window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
-      return;
-    }
-
-    if (record.href.startsWith('/share/')) {
-      navigate(record.href);
+      openShareHref(record.href);
       return;
     }
 

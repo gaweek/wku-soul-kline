@@ -80,7 +80,7 @@ test('generated results include a complete share card surface', () => {
   assert.match(pageSource, /encodeSharePayload/);
   assert.match(pageSource, /decodeSharePayload/);
   assert.match(pageSource, /wkuShare/);
-  assert.match(pageSource, /const buildShareHref = \(payload: string\) => `\/share\/\$\{payload\}`/);
+  assert.match(pageSource, /const buildShareHref = \(payload: string\) => `\/#\/share\/\$\{payload\}`/);
   assert.match(appSource, /path="\/share\/:sharePayload"/);
   assert.match(pageSource, /SharedResultPage/);
   assert.match(pageSource, /buildSingleShareText/);
@@ -99,6 +99,16 @@ test('share links open a standalone page and can be copied with a fallback', () 
   assert.match(pageSource, /navigator\.clipboard\?\.writeText/);
   assert.match(pageSource, /document\.execCommand\('copy'\)/);
   assert.equal(pageSource.includes('window.location.hash = nextHash'), false);
+});
+
+test('copied share links keep encoded results out of the server request path', () => {
+  assert.match(pageSource, /const buildShareHref = \(payload: string\) => `\/#\/share\/\$\{payload\}`/);
+  assert.match(pageSource, /const buildInviteHref = \(payload: string\) => `\/#\/invite\/\$\{payload\}`/);
+  assert.match(pageSource, /normalizeRecentShareHref[\s\S]*replace\('\/share\/', '\/#\/share\/'\)/);
+  assert.match(pageSource, /openShareHref/);
+  assert.match(pageSource, /const nextHash = nextHref\.includes\('#'\) \? `#\$\{nextHref\.split\('#'\)\[1\]\}` : ''/);
+  assert.match(pageSource, /setHashRoute\(nextHash\)/);
+  assert.equal(pageSource.includes('const nextPath = new URL(singleShareLink).pathname'), false);
 });
 
 test('match mode supports a two-person invite link flow', () => {
@@ -274,8 +284,7 @@ test('sidebar active states use the dark rendered mode card treatment', () => {
 
 test('recent share records open through the standalone route and expose copy action', () => {
   assert.match(pageSource, /record\.href\.startsWith\('\/share\/'\) \|\| record\.href\.startsWith\('\/#\/share\/'\)/);
-  assert.match(pageSource, /const nextPath = normalizeRecentShareHref\(record\.href\)/);
-  assert.match(pageSource, /navigate\(nextPath\)/);
+  assert.match(pageSource, /openShareHref\(record\.href\)/);
   assert.match(pageSource, /wku-recent-copy-button/);
   assert.match(pageSource, /onCopyRecent\(record\)/);
   assert.match(pageSource, /getAbsoluteShareLink\(record\.href\)/);
