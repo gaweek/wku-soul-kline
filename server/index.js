@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { handleCreateShare, handleGetShare } from './shareRoutes.js';
 import { handleVibeLineAnalyze } from './vibelineAnalyzer.js';
 import { handleVibeMatchAnalyze } from './vibelineMatchAnalyzer.js';
 
@@ -19,12 +20,14 @@ app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
     product: 'WKU soul-kline',
-    routes: ['/api/vibeline/analyze', '/api/vibeline/match'],
+    routes: ['/api/vibeline/analyze', '/api/vibeline/match', '/api/share'],
   });
 });
 
 app.post('/api/vibeline/analyze', handleVibeLineAnalyze);
 app.post('/api/vibeline/match', handleVibeMatchAnalyze);
+app.post('/api/share', handleCreateShare);
+app.get('/api/share/:id', handleGetShare);
 
 const distDir = path.join(__dirname, '..', 'dist');
 app.use(express.static(distDir));

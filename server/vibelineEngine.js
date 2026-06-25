@@ -768,7 +768,7 @@ const buildPairRisks = (personA, personB) => {
       title: '标签理解可能过度简化',
       risk: 9,
       evidence: unique([personA.mbti, personB.mbti, personA.sbti, personB.sbti]).join('、') || '双方标签信息较少',
-      suggestion: 'MBTI、SBTI 和星座只作为破冰材料，不要替代真实观察。',
+      suggestion: 'MBTI、想找搭子类型和星座只作为破冰材料，不要替代真实观察。',
     },
   ];
 };
@@ -937,7 +937,7 @@ const getStageAdviceCopy = ({
     想再看看: {
       highlight: `${highest.label} 能把“看过你”推进到“想继续了解你”`,
       risk: `${lowest.label} 如果只剩标签，容易被当成普通资料页划走`,
-      suggestion: `这一段要放真实样本：一条和${topic}有关的具体动态，比堆 MBTI、SBTI 或星座更能让人判断你们是否同频。`,
+      suggestion: `这一段要放真实样本：一条和${topic}有关的具体动态，比堆 MBTI、想找搭子类型或星座更能让人判断你们是否同频。`,
     },
     第一句话: {
       highlight: `${highest.label} 是最适合把沉默变成第一句的入口`,

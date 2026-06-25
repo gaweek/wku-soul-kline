@@ -155,14 +155,17 @@ const MBTI_OPTIONS = [
   'ESFP',
 ];
 
-const SBTI_OPTIONS = [
+const BUDDY_TYPE_OPTIONS = [
   '',
-  '慢热观察型',
-  '灵感共振型',
-  '陪伴稳定型',
-  '边界清晰型',
-  '主动破冰型',
-  '兴趣探索型',
+  '夜聊搭子',
+  '游戏搭子',
+  '电影搭子',
+  '散步搭子',
+  '学习搭子',
+  '运动搭子',
+  '探店搭子',
+  '情绪陪伴搭子',
+  '暂不确定',
 ];
 
 const GENDER_OPTIONS = [
@@ -180,7 +183,7 @@ const singleSamples: Array<ProfileFormState & { label: string }> = [
     birthday: '2001-11-08',
     gender: '暂不透露',
     mbti: 'INFP',
-    sbti: '慢热观察型',
+    sbti: '夜聊搭子',
     interestText: '独立音乐、电影、夜晚散步',
     mood: '想认识能慢慢聊起来的同频朋友',
     socialProblem: '刚开始聊天时不知道怎么发出第一句话，怕显得太冷淡。',
@@ -191,7 +194,7 @@ const singleSamples: Array<ProfileFormState & { label: string }> = [
     birthday: '1999-06-12',
     gender: '男',
     mbti: 'INTP',
-    sbti: '兴趣探索型',
+    sbti: '游戏搭子',
     interestText: '独立游戏、Steam、剧情向作品',
     mood: '想遇到能自然接话的游戏同好',
     socialProblem: '话题一旦离开游戏就容易断，不知道怎么延展到生活。',
@@ -202,7 +205,7 @@ const singleSamples: Array<ProfileFormState & { label: string }> = [
     birthday: '2000-05-03',
     gender: '女',
     mbti: 'ENFJ',
-    sbti: '陪伴稳定型',
+    sbti: '散步搭子',
     interestText: '城市生活、音乐、情绪日记',
     mood: '想被懂，但不想用力社交',
     socialProblem: '容易把表达写得太含蓄，别人不知道该怎么接。',
@@ -408,13 +411,14 @@ const decodeUrlPayload = <T,>(value: string | null): T | null => {
   }
 };
 
-const getHashPayload = (hash: string, route: 'share' | 'invite') => {
+const getHashPayload = (hash: string, route: 'share' | 'invite' | 's') => {
   const prefix = `#/${route}/`;
   if (!hash.startsWith(prefix)) return null;
   return hash.slice(prefix.length) || null;
 };
 
 const buildShareHref = (payload: string) => `/#/share/${payload}`;
+const buildShortShareHref = (id: string) => `/#/s/${id}`;
 const buildInviteHref = (payload: string) => `/#/invite/${payload}`;
 const normalizeRecentShareHref = (href: string) => {
   let localHref = href;
@@ -429,6 +433,7 @@ const normalizeRecentShareHref = (href: string) => {
   }
 
   if (localHref.startsWith('/#/share/')) return localHref;
+  if (localHref.startsWith('/#/s/')) return localHref;
   if (localHref.startsWith('/share/')) return localHref.replace('/share/', '/#/share/');
   return localHref;
 };
@@ -522,6 +527,45 @@ const decodeSharePayload = (value: string | null): SharePayload | null => {
     result: parsed.result as VibeLineResult,
     createdAt: parsed.createdAt || parsed.result.meta?.generatedAt || '',
   };
+};
+
+const createShortShareLink = async (payload: SharePayload) => {
+  const response = await fetch('/api/share', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ payload }),
+  });
+
+  if (!response.ok) {
+    throw new Error('无法生成分享链接');
+  }
+
+  const data = await response.json() as { id?: string; href?: string };
+  if (!data.href && !data.id) {
+    throw new Error('分享链接返回异常');
+  }
+
+  return data.href || buildShortShareHref(data.id || '');
+};
+
+const fetchShortSharePayload = async (id: string) => {
+  const response = await fetch(`/api/share/${encodeURIComponent(id)}`);
+
+  if (!response.ok) {
+    throw new Error('分享链接已失效或暂时无法读取');
+  }
+
+  const data = await response.json() as { payload?: SharePayload };
+  if (!data.payload?.result?.summary || !Array.isArray(data.payload.result.kline)) {
+    throw new Error('分享内容格式异常');
+  }
+
+  return data.payload;
+};
+
+const buildLegacyShareHref = (payload: SharePayload) => {
+  const shareToken = encodeSharePayload(payload);
+  return shareToken ? buildShareHref(shareToken) : '';
 };
 
 const getRecentRuns = (): RecentRunRecord[] => {
@@ -882,13 +926,13 @@ const ProfileForm: React.FC<{
           </label>
 
           <label className="block">
-            <span className={labelClass}>SBTI</span>
+            <span className={labelClass}>想找搭子类型</span>
             <select
               value={profile.sbti}
               onChange={(event) => onChange('sbti', event.target.value)}
               className={`${fieldClass} h-11 px-3`}
             >
-              {SBTI_OPTIONS.map((option) => (
+              {BUDDY_TYPE_OPTIONS.map((option) => (
                 <option key={option || 'empty'} value={option}>
                   {option || '未选择'}
                 </option>
@@ -1436,18 +1480,18 @@ const HomePage: React.FC<{
         </div>
 
         <div className="wku-hero-copy-row relative z-10 mt-8">
-          <div className="wku-hero-copy max-w-[1080px]">
-            <h1 className="wku-display text-4xl font-black leading-[1.02] text-slate-950 sm:text-5xl lg:text-[64px]">
+          <div className="wku-hero-copy max-w-[1160px]">
+            <h1 className="wku-display text-4xl font-black leading-[1.02] text-slate-950 sm:text-5xl lg:text-[60px]">
               WKU soul-kline
             </h1>
-            <p className="wku-hero-subtitle mt-3 text-2xl font-black leading-tight text-slate-900 sm:text-[34px]">
-              谁会停下来看你，谁会再次想起你，<span>谁又真正懂你的灵魂？</span>
+            <p className="wku-hero-subtitle mt-3 text-2xl font-black leading-tight text-slate-900 sm:text-[32px]">
+              谁会停下来看你，谁会再次想起你，谁又真正懂你的灵魂？
             </p>
             <p className="wku-hero-soul-line mt-3">
               你不是不想社交，而是还没遇到那个真正懂你灵魂的人
             </p>
             <p className="mt-4 max-w-[68ch] text-base leading-7 text-slate-700">
-              把生日、性别、MBTI、SBTI、兴趣和真实社交样本放进 WKU。它不判断你是谁，只把陌生人从第一眼到再次想起的连接过程，画成一条可以触摸的 soul-kline。
+              把生日、性别、MBTI、想找搭子类型、兴趣和真实社交样本放进 WKU。它不判断你是谁，只把陌生人从第一眼到再次想起的连接过程，画成一条可以触摸的 soul-kline。
             </p>
           </div>
 
@@ -1572,6 +1616,39 @@ const SharedResultPage: React.FC<{
   );
 };
 
+const ShareLoadingPage: React.FC<{
+  error: string;
+  onStartOwn: () => void;
+}> = ({ error, onStartOwn }) => (
+  <section className="wku-shared-result-page">
+    <div className="wku-shared-result-hero">
+      <div>
+        <p className="text-xs font-black text-teal-700">WKU soul-kline 分享页</p>
+        <h1 className="mt-2 text-2xl font-black text-slate-950">
+          {error ? '这条分享暂时无法打开' : '正在读取朋友的 soul-kline'}
+        </h1>
+        <p className="mt-3 max-w-[70ch] text-sm font-semibold leading-7 text-slate-700">
+          {error || '系统正在根据短链接加载分享结果，稍等一下就能看到完整读盘。'}
+        </p>
+      </div>
+      <div className="wku-shared-score">
+        <span>分享</span>
+        <b>{error ? '!' : '...'}</b>
+      </div>
+    </div>
+    <div className="wku-shared-result-cta">
+      <div>
+        <b>也可以先生成自己的 soul-kline</b>
+        <p>进入工作台填写你的样本，生成只属于你的连接曲线。</p>
+      </div>
+      <button type="button" className="wku-start-button wku-clickable" onClick={onStartOwn}>
+        <Sparkles className="h-4 w-4" />
+        生成我的 soul-kline
+      </button>
+    </div>
+  </section>
+);
+
 const ResultPreviewPanel: React.FC<{ mode: Mode }> = ({ mode }) => {
   const isMatch = mode === 'match';
   const items = isMatch
@@ -1653,23 +1730,34 @@ const VibeLinePage: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [recentRuns, setRecentRuns] = useState<RecentRunRecord[]>(getRecentRuns);
   const [hashRoute, setHashRoute] = useState(() => (typeof window === 'undefined' ? '' : window.location.hash));
+  const [singleShareLink, setSingleShareLink] = useState('');
+  const [remoteSharePayload, setRemoteSharePayload] = useState<SharePayload | null>(null);
+  const [shareLoadError, setShareLoadError] = useState('');
   const { contextSafe } = useGSAP({ scope: pageRef });
   const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const hashSharePayload = useMemo(() => getHashPayload(hashRoute, 'share'), [hashRoute]);
+  const hashShortShareId = useMemo(() => getHashPayload(hashRoute, 's'), [hashRoute]);
   const hashInvitePayload = useMemo(() => getHashPayload(hashRoute, 'invite'), [hashRoute]);
   const activeSharePayload = sharePayload || hashSharePayload || searchParams.get('wkuShare') || '';
-  const sharedPayload = useMemo(
+  const legacySharedPayload = useMemo(
     () => decodeSharePayload(activeSharePayload),
     [activeSharePayload]
   );
+  const activeShortShareId = hashShortShareId || searchParams.get('wkuShareId') || '';
+  const sharedPayload = remoteSharePayload || legacySharedPayload;
   const routeInvitePayload = invitePayload || hashInvitePayload || searchParams.get('wkuInvite');
   const isWorkbenchRoute = location.pathname === '/workbench' || location.pathname === '/vibeline' || location.pathname === '/soul-kline';
-  const activeView: AppView = sharedPayload ? 'share' : routeInvitePayload ? 'invite' : isWorkbenchRoute ? 'workbench' : 'home';
+  const activeView: AppView = sharedPayload || activeShortShareId ? 'share' : routeInvitePayload ? 'invite' : isWorkbenchRoute ? 'workbench' : 'home';
   const isHomeView = activeView === 'home';
   const inviteView = activeView === 'invite';
-  const activeRecentHref = activeView === 'share' && activeSharePayload ? buildShareHref(activeSharePayload) : '';
-  const activeShareLink = activeSharePayload && typeof window !== 'undefined'
-    ? `${window.location.origin}${buildShareHref(activeSharePayload)}`
+  const activeShareHref = activeShortShareId
+    ? buildShortShareHref(activeShortShareId)
+    : activeSharePayload
+      ? buildShareHref(activeSharePayload)
+      : '';
+  const activeRecentHref = activeView === 'share' ? activeShareHref : '';
+  const activeShareLink = activeShareHref && typeof window !== 'undefined'
+    ? `${window.location.origin}${activeShareHref}`
     : '';
 
   const singleInput = useMemo(() => profileToInput(singleProfile), [singleProfile]);
@@ -1728,14 +1816,6 @@ const VibeLinePage: React.FC = () => {
 
     return `${window.location.origin}${buildInviteHref(payload)}`;
   }, [personA, relationshipGoal]);
-  const singleShareLink = useMemo(() => {
-    if (!result || typeof window === 'undefined') return '';
-
-    const payload = encodeSharePayload(createSharePayload(result));
-    if (!payload) return '';
-
-    return `${window.location.origin}${buildShareHref(payload)}`;
-  }, [result]);
 
   const performGenerationPreviewScroll = contextSafe(() => {
     const target = resultSectionRef.current?.querySelector<HTMLElement>('.wku-chart-card, .wku-chart-loading-card')
@@ -1818,6 +1898,33 @@ const VibeLinePage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    if (!activeShortShareId) {
+      setRemoteSharePayload(null);
+      setShareLoadError('');
+      return undefined;
+    }
+
+    setRemoteSharePayload(null);
+    setShareLoadError('');
+
+    void fetchShortSharePayload(activeShortShareId)
+      .then((payload) => {
+        if (!cancelled) setRemoteSharePayload(payload);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setShareLoadError(err instanceof Error ? err.message : '分享链接已失效或暂时无法读取');
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeShortShareId]);
+
+  useEffect(() => {
     const invitePayload = decodeInvitePayload(routeInvitePayload);
     if (!invitePayload) return;
 
@@ -1874,6 +1981,7 @@ const VibeLinePage: React.FC = () => {
     setRelationshipGoal('');
     setResult(null);
     setMatchResult(null);
+    setSingleShareLink('');
     setError('');
     setMatchError('');
     setScrollIntent(null);
@@ -1895,7 +2003,7 @@ const VibeLinePage: React.FC = () => {
   };
 
   const openRecentRun = (record: RecentRunRecord) => {
-    if (record.href.startsWith('/share/') || record.href.startsWith('/#/share/')) {
+    if (record.href.startsWith('/share/') || record.href.startsWith('/#/share/') || record.href.startsWith('/#/s/')) {
       openShareHref(record.href);
       return;
     }
@@ -1907,6 +2015,31 @@ const VibeLinePage: React.FC = () => {
 
   const copyRecentRunLink = (record: RecentRunRecord) => {
     copyText(`recent-share-${record.id}`, getAbsoluteShareLink(record.href));
+  };
+
+  const publishSingleShareLink = async (finalResult: VibeLineResult) => {
+    const payload = createSharePayload(finalResult);
+    const fallbackHref = buildLegacyShareHref(payload);
+    let shareHref = fallbackHref;
+
+    try {
+      shareHref = await createShortShareLink(payload);
+    } catch {
+      shareHref = fallbackHref;
+    }
+
+    if (shareHref) {
+      setSingleShareLink(getAbsoluteShareLink(shareHref));
+    }
+
+    saveRecentRun({
+      id: `single-${finalResult.meta.generatedAt}`,
+      type: 'single',
+      title: finalResult.marketType,
+      detail: `连接分 ${finalResult.kline[finalResult.kline.length - 1]?.close ?? '-'}/100`,
+      href: shareHref || '/',
+      createdAt: finalResult.meta.generatedAt,
+    });
   };
 
   const handleHeroModeSelect = (nextMode: Mode) => {
@@ -1966,6 +2099,7 @@ const VibeLinePage: React.FC = () => {
     setLoading(true);
     setError('');
     setResult(null);
+    setSingleShareLink('');
     setSingleProgress('正在启动 Who Know U 连接引擎');
     scrollToGenerationPreview('single');
     setSingleAgentStatuses(() => {
@@ -1994,15 +2128,7 @@ const VibeLinePage: React.FC = () => {
       setResult(finalResult);
       setSingleAgentStatuses(createAgentStatusSnapshot(ALL_AGENT_COMPLETE_STATUSES));
       setSingleProgress('你的 Who Know U 已生成');
-      const shareToken = encodeSharePayload(createSharePayload(finalResult));
-      saveRecentRun({
-        id: `single-${finalResult.meta.generatedAt}`,
-        type: 'single',
-        title: finalResult.marketType,
-        detail: `连接分 ${finalResult.kline[finalResult.kline.length - 1]?.close ?? '-'}/100`,
-        href: shareToken ? buildShareHref(shareToken) : '/',
-        createdAt: finalResult.meta.generatedAt,
-      });
+      await publishSingleShareLink(finalResult);
     } catch (err) {
       setError(err instanceof Error ? err.message : '生成失败');
       setSingleAgentStatuses((prev) => {
@@ -2113,15 +2239,22 @@ const VibeLinePage: React.FC = () => {
 
   return (
     <div ref={pageRef} className="wku-page min-h-screen text-slate-950">
-      {sharedPayload ? (
+      {activeView === 'share' ? (
         <main className="wku-standalone-share-page relative mx-auto max-w-[1320px] px-4 py-5 sm:px-6">
-          <SharedResultPage
-            payload={sharedPayload}
-            shareLink={activeShareLink}
-            copied={copiedId === 'shared-result-link'}
-            onCopyShare={() => copyText('shared-result-link', activeShareLink)}
-            onStartOwn={goCreateNewSoulKline}
-          />
+          {sharedPayload ? (
+            <SharedResultPage
+              payload={sharedPayload}
+              shareLink={activeShareLink}
+              copied={copiedId === 'shared-result-link'}
+              onCopyShare={() => copyText('shared-result-link', activeShareLink)}
+              onStartOwn={goCreateNewSoulKline}
+            />
+          ) : (
+            <ShareLoadingPage
+              error={shareLoadError}
+              onStartOwn={goCreateNewSoulKline}
+            />
+          )}
         </main>
       ) : (
         <WorkbenchShell

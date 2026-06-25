@@ -33,7 +33,7 @@ test('sanitizeVibeInput removes metaphysics terms and preserves user intent', ()
     birthday: '2001-11-08',
     gender: '非二元',
     mbti: 'infp',
-    sbti: '慢热观察型',
+    sbti: '夜聊搭子',
     socialProblem: '最近不知道怎么发出第一句话',
   });
 
@@ -44,7 +44,7 @@ test('sanitizeVibeInput removes metaphysics terms and preserves user intent', ()
   assert.equal(input.zodiac, '天蝎座');
   assert.equal(input.gender, '非二元');
   assert.equal(input.mbti, 'INFP');
-  assert.equal(input.sbti, '慢热观察型');
+  assert.equal(input.sbti, '夜聊搭子');
   assert.match(input.socialProblem, /第一句话/);
   assert.match(input.draft, /孤独感/);
 });
@@ -214,7 +214,7 @@ test('buildFallbackVibeMatchResult creates a two-person resonance report', () =>
       interests: ['独立音乐', '电影'],
       birthday: '2001-11-08',
       mbti: 'INFP',
-      sbti: '慢热观察型',
+      sbti: '夜聊搭子',
       mood: '想被自然理解',
       socialProblem: '第一句话容易紧张',
     },
@@ -223,7 +223,7 @@ test('buildFallbackVibeMatchResult creates a two-person resonance report', () =>
       interests: ['看展', '城市散步', '摄影'],
       birthday: '2000-05-03',
       mbti: 'ENFJ',
-      sbti: '陪伴稳定型',
+      sbti: '散步搭子',
       mood: '想遇到能持续交流的人',
       socialProblem: '怕对方觉得我太主动',
     },
@@ -241,6 +241,9 @@ test('buildFallbackVibeMatchResult creates a two-person resonance report', () =>
   assert.equal(result.mismatchRisks.length >= 2, true);
   assert.equal(result.conversationBridges.length >= 3, true);
   assert.equal(result.matchScore >= 0 && result.matchScore <= 100, true);
+  const visibleCopy = collectStringValues(result).join('\n');
+  assert.equal(visibleCopy.includes('SBTI'), false);
+  assert.match(visibleCopy, /想找搭子类型/);
 });
 
 test('buildFallbackVibeMatchResult uses you and Ta instead of visible A/B labels', () => {

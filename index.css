@@ -55,11 +55,7 @@
   .wku-hero-subtitle {
     max-width: min(1120px, 100%);
     white-space: normal;
-    text-wrap: balance;
-  }
-
-  .wku-hero-subtitle span {
-    white-space: normal;
+    text-wrap: pretty;
   }
 
   .wku-hero-soul-line {
@@ -130,13 +126,13 @@
 
   .wku-hero-strip {
     border-radius: 22px;
-    min-height: calc(100svh - 32px);
+    min-height: calc(100svh - 56px);
   }
 
   .wku-hero-strip > .relative {
     display: grid;
     min-height: inherit;
-    grid-template-rows: auto auto minmax(460px, 1fr);
+    grid-template-rows: auto auto minmax(390px, 1fr);
   }
 
   .wku-hero-aura {
@@ -154,7 +150,7 @@
 
   .wku-hero-map {
     position: relative;
-    min-height: clamp(460px, 48svh, 620px);
+    min-height: clamp(390px, 42svh, 560px);
     overflow: hidden;
     border: 1px solid rgba(148, 163, 184, 0.24);
     border-radius: 18px;

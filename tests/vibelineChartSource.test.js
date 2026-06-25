@@ -79,8 +79,10 @@ test('generated results include a complete share card surface', () => {
   assert.match(pageSource, /生成我的 soul-kline/);
   assert.match(pageSource, /encodeSharePayload/);
   assert.match(pageSource, /decodeSharePayload/);
+  assert.match(pageSource, /createShortShareLink/);
   assert.match(pageSource, /wkuShare/);
   assert.match(pageSource, /const buildShareHref = \(payload: string\) => `\/#\/share\/\$\{payload\}`/);
+  assert.match(pageSource, /const buildShortShareHref = \(id: string\) => `\/#\/s\/\$\{id\}`/);
   assert.match(appSource, /path="\/share\/:sharePayload"/);
   assert.match(pageSource, /SharedResultPage/);
   assert.match(pageSource, /buildSingleShareText/);
@@ -103,11 +105,17 @@ test('share links open a standalone page and can be copied with a fallback', () 
 
 test('copied share links keep encoded results out of the server request path', () => {
   assert.match(pageSource, /const buildShareHref = \(payload: string\) => `\/#\/share\/\$\{payload\}`/);
+  assert.match(pageSource, /const buildShortShareHref = \(id: string\) => `\/#\/s\/\$\{id\}`/);
+  assert.match(pageSource, /fetch\('\/api\/share'/);
+  assert.match(pageSource, /fetch\(`\/api\/share\/\$\{encodeURIComponent\(id\)\}`/);
+  assert.match(pageSource, /getHashPayload\(hashRoute, 's'\)/);
+  assert.match(pageSource, /setSingleShareLink\(getAbsoluteShareLink\(shareHref\)\)/);
   assert.match(pageSource, /const buildInviteHref = \(payload: string\) => `\/#\/invite\/\$\{payload\}`/);
   assert.match(pageSource, /normalizeRecentShareHref[\s\S]*replace\('\/share\/', '\/#\/share\/'\)/);
   assert.match(pageSource, /openShareHref/);
   assert.match(pageSource, /const nextHash = nextHref\.includes\('#'\) \? `#\$\{nextHref\.split\('#'\)\[1\]\}` : ''/);
   assert.match(pageSource, /setHashRoute\(nextHash\)/);
+  assert.equal(pageSource.includes('return `${window.location.origin}${buildShareHref(payload)}`'), false);
   assert.equal(pageSource.includes('const nextPath = new URL(singleShareLink).pathname'), false);
 });
 
@@ -342,20 +350,33 @@ test('home layout keeps the original hero and makes the workbench CTA obvious', 
   assert.match(pageSource, /wku-hero wku-glass-hero wku-hero-strip/);
   assert.match(pageSource, /wku-home-shell/);
   assert.match(pageSource, /max-w-\[1640px\]/);
-  assert.match(pageSource, /max-w-\[1080px\]/);
+  assert.match(pageSource, /max-w-\[1160px\]/);
   assert.match(pageSource, /立即体验/);
   assert.match(pageSource, /onStart\('single'\)/);
-  assert.match(pageSource, /lg:text-\[64px\]/);
-  assert.match(pageSource, /sm:text-\[34px\]/);
+  assert.match(pageSource, /谁会停下来看你，谁会再次想起你，谁又真正懂你的灵魂？/);
+  assert.equal(pageSource.includes('谁会再次想起你，<span>谁又真正懂你的灵魂？</span>'), false);
+  assert.match(pageSource, /lg:text-\[60px\]/);
+  assert.match(pageSource, /sm:text-\[32px\]/);
   assert.equal(cssSource.includes('white-space: nowrap;\\n    text-wrap: normal;'), false);
   assert.match(cssSource, /wku-home-shell\s*\{[\s\S]*min-height:\s*100svh/);
-  assert.match(cssSource, /wku-hero-strip\s*\{[\s\S]*min-height:\s*calc\(100svh - 32px\)/);
-  assert.match(cssSource, /wku-hero-strip\s*>\s*\.relative\s*\{[\s\S]*grid-template-rows:\s*auto auto minmax\(460px,\s*1fr\)/);
-  assert.match(cssSource, /wku-hero-subtitle\s*\{[\s\S]*text-wrap:\s*balance/);
+  assert.match(cssSource, /wku-hero-strip\s*\{[\s\S]*min-height:\s*calc\(100svh - 56px\)/);
+  assert.match(cssSource, /wku-hero-strip\s*>\s*\.relative\s*\{[\s\S]*grid-template-rows:\s*auto auto minmax\(390px,\s*1fr\)/);
+  assert.match(cssSource, /wku-hero-subtitle\s*\{[\s\S]*text-wrap:\s*pretty/);
   assert.match(cssSource, /wku-hero-cta\s*\{[\s\S]*justify-self:\s*center/);
   assert.match(cssSource, /grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(240px,\s*340px\)/);
   assert.match(cssSource, /min-height:\s*64px/);
-  assert.match(cssSource, /wku-hero-map\s*\{[\s\S]*min-height:\s*clamp\(460px,\s*48svh,\s*620px\)/);
+  assert.match(cssSource, /wku-hero-map\s*\{[\s\S]*min-height:\s*clamp\(390px,\s*42svh,\s*560px\)/);
+});
+
+test('profile form replaces SBTI with popular buddy type language', () => {
+  assert.match(pageSource, /BUDDY_TYPE_OPTIONS/);
+  assert.match(pageSource, /想找搭子类型/);
+  assert.match(pageSource, /夜聊搭子/);
+  assert.match(pageSource, /游戏搭子/);
+  assert.match(pageSource, /情绪陪伴搭子/);
+  assert.equal(pageSource.includes('SBTI_OPTIONS'), false);
+  assert.equal(pageSource.includes('>SBTI<'), false);
+  assert.match(pageSource, /MBTI、想找搭子类型、兴趣和真实社交样本/);
 });
 
 test('loading preview carries the six agent progress beside the chart', () => {
