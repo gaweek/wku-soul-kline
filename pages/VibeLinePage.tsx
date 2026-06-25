@@ -388,9 +388,35 @@ const getHashPayload = (hash: string, route: 'share' | 'invite') => {
   return hash.slice(prefix.length) || null;
 };
 
-const buildShareHref = (payload: string) => `/#/share/${payload}`;
+const buildShareHref = (payload: string) => `/share/${payload}`;
 const buildInviteHref = (payload: string) => `/#/invite/${payload}`;
-const normalizeRecentShareHref = (href: string) => (href.startsWith('/share/') ? `/#${href}` : href);
+const normalizeRecentShareHref = (href: string) => (href.startsWith('/#/share/') ? href.replace('/#', '') : href);
+const getAbsoluteShareLink = (href: string) => {
+  const path = normalizeRecentShareHref(href);
+  if (typeof window === 'undefined' || /^https?:\/\//.test(path)) return path;
+  return `${window.location.origin}${path}`;
+};
+
+const writeClipboardText = async (text: string) => {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+  } catch {
+    // Fall back below when clipboard permission or insecure contexts block the modern API.
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand('copy');
+  textarea.remove();
+};
 
 const normalizeInviteProfile = (profile: Partial<ProfileFormState> = {}): ProfileFormState => ({
   draft: profile.draft || '',
@@ -1181,11 +1207,13 @@ const WorkbenchShell: React.FC<{
   collapsed: boolean;
   recentRuns: RecentRunRecord[];
   activeRecentHref: string;
+  copiedId: string;
   onToggle: () => void;
   onNavigateHome: () => void;
   onNavigateWorkbench: () => void;
   onSelectMode: (mode: Mode) => void;
   onOpenRecent: (record: RecentRunRecord) => void;
+  onCopyRecent: (record: RecentRunRecord) => void;
   children: React.ReactNode;
 }> = ({
   activeView,
@@ -1193,11 +1221,13 @@ const WorkbenchShell: React.FC<{
   collapsed,
   recentRuns,
   activeRecentHref,
+  copiedId,
   onToggle,
   onNavigateHome,
   onNavigateWorkbench,
   onSelectMode,
   onOpenRecent,
+  onCopyRecent,
   children,
 }) => {
   const workbenchNavActive = activeView === 'workbench' || activeView === 'invite';
@@ -1295,16 +1325,29 @@ const WorkbenchShell: React.FC<{
                 const isRecentActive = normalizeRecentShareHref(record.href) === activeRecentHref;
 
                 return (
-                  <button
+                  <article
                     key={record.id}
-                    type="button"
-                    className={`wku-recent-run wku-clickable ${isRecentActive ? 'is-active' : ''}`}
-                    onClick={() => onOpenRecent(record)}
-                    aria-current={isRecentActive ? 'page' : undefined}
+                    className={`wku-recent-run ${isRecentActive ? 'is-active' : ''}`}
                   >
-                    <b>{record.title}</b>
-                    <span>{record.detail}</span>
-                  </button>
+                    <button
+                      type="button"
+                      className="wku-recent-run-main wku-clickable"
+                      onClick={() => onOpenRecent(record)}
+                      aria-current={isRecentActive ? 'page' : undefined}
+                    >
+                      <b>{record.title}</b>
+                      <span>{record.detail}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="wku-recent-copy-button wku-clickable"
+                      onClick={() => onCopyRecent(record)}
+                      aria-label={`复制 ${record.title} 的分享链接`}
+                      title="复制分享链接"
+                    >
+                      {copiedId === `recent-share-${record.id}` ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </button>
+                  </article>
                 );
               })
             ) : (
@@ -1326,7 +1369,7 @@ const HomePage: React.FC<{
   };
   onStart: (mode: Mode) => void;
 }> = ({ modeMeta, onStart }) => (
-  <main className="relative mx-auto max-w-[1500px] px-4 py-5 sm:px-6">
+  <main className="wku-home-shell relative mx-auto max-w-[1640px] px-4 py-4 sm:px-6">
     <section className="wku-hero wku-glass-hero wku-hero-strip overflow-hidden">
       <div className="relative px-5 py-5 sm:px-7 lg:px-8">
         <div className="pointer-events-none absolute inset-0 opacity-90">
@@ -1352,11 +1395,11 @@ const HomePage: React.FC<{
         </div>
 
         <div className="wku-hero-copy-row relative z-10 mt-8">
-          <div className="wku-hero-copy max-w-[980px]">
-            <h1 className="wku-display text-4xl font-black leading-[1.02] text-slate-950 sm:text-5xl lg:text-[56px]">
+          <div className="wku-hero-copy max-w-[1080px]">
+            <h1 className="wku-display text-4xl font-black leading-[1.02] text-slate-950 sm:text-5xl lg:text-[64px]">
               WKU soul-kline
             </h1>
-            <p className="wku-hero-subtitle mt-3 text-2xl font-black leading-tight text-slate-900 sm:text-[30px]">
+            <p className="wku-hero-subtitle mt-3 text-2xl font-black leading-tight text-slate-900 sm:text-[34px]">
               谁会停下来看你，谁会再次想起你，<span>谁又真正懂你的灵魂？</span>
             </p>
             <p className="wku-hero-soul-line mt-3">
@@ -1427,18 +1470,27 @@ const WorkbenchPage: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
 const SharedResultPage: React.FC<{
   payload: SharePayload;
+  shareLink: string;
+  copied: boolean;
+  onCopyShare: () => void;
   onStartOwn: () => void;
-}> = ({ payload, onStartOwn }) => {
+}> = ({ payload, shareLink, copied, onCopyShare, onStartOwn }) => {
   const { result } = payload;
   const finalScore = result.kline[result.kline.length - 1]?.close ?? '-';
   const shareText = buildSingleShareText(result);
 
   return (
     <section className="wku-shared-result-page">
-      <button type="button" className="wku-back-button wku-clickable" onClick={onStartOwn}>
-        <ChevronLeft className="h-4 w-4" />
-        生成我的 soul-kline
-      </button>
+      <div className="wku-shared-result-toolbar">
+        <button type="button" className="wku-back-button wku-clickable" onClick={onStartOwn}>
+          <ChevronLeft className="h-4 w-4" />
+          生成我的 soul-kline
+        </button>
+        <button type="button" className="wku-back-button wku-clickable" onClick={onCopyShare} disabled={!shareLink}>
+          {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          复制分享链接
+        </button>
+      </div>
       <div className="wku-shared-result-hero">
         <div>
           <p className="text-xs font-black text-teal-700">来自朋友的 Who Know U 结果</p>
@@ -1562,6 +1614,9 @@ const VibeLinePage: React.FC = () => {
   const isHomeView = activeView === 'home';
   const inviteView = activeView === 'invite';
   const activeRecentHref = activeView === 'share' && activeSharePayload ? buildShareHref(activeSharePayload) : '';
+  const activeShareLink = activeSharePayload && typeof window !== 'undefined'
+    ? `${window.location.origin}${buildShareHref(activeSharePayload)}`
+    : '';
 
   const singleInput = useMemo(() => profileToInput(singleProfile), [singleProfile]);
   const canSubmit = singleInput.draft.trim().length >= 12 && !loading;
@@ -1720,14 +1775,10 @@ const VibeLinePage: React.FC = () => {
   const openSharePage = () => {
     if (!singleShareLink) return;
 
-    const nextHash = new URL(singleShareLink).hash;
-    if (typeof window === 'undefined' || !nextHash) {
-      navigate(new URL(singleShareLink).pathname);
-      return;
-    }
-
-    window.location.hash = nextHash;
-    setHashRoute(nextHash);
+    const nextPath = new URL(singleShareLink).pathname;
+    clearHashRoute();
+    navigate(nextPath);
+    window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
   };
 
   const saveRecentRun = (record: RecentRunRecord) => {
@@ -1739,13 +1790,11 @@ const VibeLinePage: React.FC = () => {
   };
 
   const openRecentRun = (record: RecentRunRecord) => {
-    if (record.href.startsWith('/#/share/')) {
-      if (typeof window !== 'undefined') {
-        const nextHash = record.href.replace(/^\/#/, '#');
-        window.location.hash = nextHash;
-        setHashRoute(nextHash);
-        window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
-      }
+    if (record.href.startsWith('/share/') || record.href.startsWith('/#/share/')) {
+      const nextPath = normalizeRecentShareHref(record.href);
+      clearHashRoute();
+      navigate(nextPath);
+      window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
       return;
     }
 
@@ -1757,6 +1806,10 @@ const VibeLinePage: React.FC = () => {
     handleModeChange(record.type);
     navigate('/workbench');
     requestAnimationFrame(() => resultSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
+
+  const copyRecentRunLink = (record: RecentRunRecord) => {
+    copyText(`recent-share-${record.id}`, getAbsoluteShareLink(record.href));
   };
 
   const handleHeroModeSelect = (nextMode: Mode) => {
@@ -1935,9 +1988,10 @@ const VibeLinePage: React.FC = () => {
 
   const copyText = (id: string, text: string) => {
     if (!text) return;
-    void navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    window.setTimeout(() => setCopiedId(''), 1400);
+    void writeClipboardText(text).then(() => {
+      setCopiedId(id);
+      window.setTimeout(() => setCopiedId(''), 1400);
+    });
   };
 
   const copyCard = (card: VibeLineVariant) => {
@@ -1946,23 +2000,32 @@ const VibeLinePage: React.FC = () => {
 
   return (
     <div ref={pageRef} className="wku-page min-h-screen text-slate-950">
-      <WorkbenchShell
-        activeView={activeView}
-        mode={mode}
-        collapsed={sidebarCollapsed}
-        recentRuns={recentRuns}
-        activeRecentHref={activeRecentHref}
-        onToggle={() => setSidebarCollapsed((prev) => !prev)}
-        onNavigateHome={openHome}
-        onNavigateWorkbench={() => openWorkbench(mode)}
-        onSelectMode={openWorkbench}
-        onOpenRecent={openRecentRun}
-      >
-        {sharedPayload ? (
-          <main className="relative mx-auto max-w-[1320px] px-4 py-5 sm:px-6">
-            <SharedResultPage payload={sharedPayload} onStartOwn={() => openWorkbench('single')} />
-          </main>
-        ) : isHomeView ? (
+      {sharedPayload ? (
+        <main className="wku-standalone-share-page relative mx-auto max-w-[1320px] px-4 py-5 sm:px-6">
+          <SharedResultPage
+            payload={sharedPayload}
+            shareLink={activeShareLink}
+            copied={copiedId === 'shared-result-link'}
+            onCopyShare={() => copyText('shared-result-link', activeShareLink)}
+            onStartOwn={() => openWorkbench('single')}
+          />
+        </main>
+      ) : (
+        <WorkbenchShell
+          activeView={activeView}
+          mode={mode}
+          collapsed={sidebarCollapsed}
+          recentRuns={recentRuns}
+          activeRecentHref={activeRecentHref}
+          copiedId={copiedId}
+          onToggle={() => setSidebarCollapsed((prev) => !prev)}
+          onNavigateHome={openHome}
+          onNavigateWorkbench={() => openWorkbench(mode)}
+          onSelectMode={openWorkbench}
+          onOpenRecent={openRecentRun}
+          onCopyRecent={copyRecentRunLink}
+        >
+          {isHomeView ? (
           <HomePage
             modeMeta={modeMeta}
             onStart={openWorkbench}
@@ -2412,7 +2475,8 @@ const VibeLinePage: React.FC = () => {
           </section>
           </WorkbenchPage>
         )}
-      </WorkbenchShell>
+        </WorkbenchShell>
+      )}
     </div>
   );
 };

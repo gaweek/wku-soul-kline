@@ -118,8 +118,25 @@
       linear-gradient(120deg, rgba(34, 211, 238, 0.10), rgba(217, 249, 157, 0.08));
   }
 
+  .wku-home-shell {
+    display: flex;
+    min-height: 100svh;
+    align-items: stretch;
+  }
+
+  .wku-home-shell .wku-hero {
+    width: 100%;
+  }
+
   .wku-hero-strip {
     border-radius: 22px;
+    min-height: calc(100svh - 32px);
+  }
+
+  .wku-hero-strip > .relative {
+    display: grid;
+    min-height: inherit;
+    grid-template-rows: auto auto minmax(460px, 1fr);
   }
 
   .wku-hero-aura {
@@ -137,7 +154,7 @@
 
   .wku-hero-map {
     position: relative;
-    min-height: clamp(340px, 38svh, 460px);
+    min-height: clamp(460px, 48svh, 620px);
     overflow: hidden;
     border: 1px solid rgba(148, 163, 184, 0.24);
     border-radius: 18px;
@@ -163,14 +180,14 @@
   .wku-hero-node {
     position: absolute;
     z-index: 2;
-    width: min(260px, 25%);
-    min-height: 70px;
+    width: min(300px, 24%);
+    min-height: 78px;
     border: 1px solid rgba(148, 163, 184, 0.26);
     border-radius: 14px;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(248, 250, 252, 0.26)),
       linear-gradient(135deg, rgba(34, 211, 238, 0.10), rgba(217, 249, 157, 0.08));
-    padding: 10px;
+    padding: 12px;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
     backdrop-filter: blur(18px) saturate(1.08);
     transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
@@ -222,9 +239,9 @@
 
   .wku-hero-copy-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 340px);
     align-items: center;
-    gap: 28px;
+    gap: 36px;
   }
 
   .wku-hero-copy {
@@ -2266,17 +2283,18 @@
 
 .wku-recent-run {
   display: grid;
-  gap: 3px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
   border: 1px solid rgba(148, 163, 184, 0.24);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.72);
-  padding: 9px;
-  text-align: left;
+  padding: 7px;
   transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
 }
 
 .wku-recent-run:hover,
-.wku-recent-run:focus-visible {
+.wku-recent-run:focus-within {
   border-color: rgba(20, 184, 166, 0.36);
   background: rgba(240, 253, 250, 0.82);
   outline: none;
@@ -2295,6 +2313,22 @@
 .wku-recent-empty {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.wku-recent-run-main {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  padding: 2px;
+  text-align: left;
+}
+
+.wku-recent-run-main:focus-visible,
+.wku-recent-copy-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.18);
 }
 
 .wku-recent-run b {
@@ -2317,6 +2351,26 @@
 }
 
 .wku-recent-run.is-active span {
+  color: #0f766e;
+}
+
+.wku-recent-copy-button {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.76);
+  color: #334155;
+  transition: border-color 180ms ease, background 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.wku-recent-copy-button:hover {
+  border-color: rgba(20, 184, 166, 0.38);
+  background: rgba(236, 254, 255, 0.82);
   color: #0f766e;
 }
 
@@ -2415,6 +2469,18 @@
 .wku-shared-result-page {
   display: grid;
   gap: 16px;
+}
+
+.wku-standalone-share-page {
+  min-height: 100svh;
+}
+
+.wku-shared-result-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .wku-back-button {

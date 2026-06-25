@@ -80,6 +80,7 @@ test('generated results include a complete share card surface', () => {
   assert.match(pageSource, /encodeSharePayload/);
   assert.match(pageSource, /decodeSharePayload/);
   assert.match(pageSource, /wkuShare/);
+  assert.match(pageSource, /const buildShareHref = \(payload: string\) => `\/share\/\$\{payload\}`/);
   assert.match(appSource, /path="\/share\/:sharePayload"/);
   assert.match(pageSource, /SharedResultPage/);
   assert.match(pageSource, /buildSingleShareText/);
@@ -87,6 +88,17 @@ test('generated results include a complete share card surface', () => {
   assert.match(cssSource, /wku-result-share-card/);
   assert.match(cssSource, /wku-shared-result-page/);
   assert.match(cssSource, /wku-share-card-actions/);
+});
+
+test('share links open a standalone page and can be copied with a fallback', () => {
+  assert.match(pageSource, /wku-standalone-share-page/);
+  assert.match(pageSource, /activeShareLink/);
+  assert.match(pageSource, /shareLink=\{activeShareLink\}/);
+  assert.match(pageSource, /onCopyShare=\{\(\) => copyText\('shared-result-link', activeShareLink\)\}/);
+  assert.match(pageSource, /writeClipboardText/);
+  assert.match(pageSource, /navigator\.clipboard\?\.writeText/);
+  assert.match(pageSource, /document\.execCommand\('copy'\)/);
+  assert.equal(pageSource.includes('window.location.hash = nextHash'), false);
 });
 
 test('match mode supports a two-person invite link flow', () => {
@@ -191,7 +203,7 @@ test('shared recent result highlights the selected record instead of the workben
   assert.match(pageSource, /activeRecentHref/);
   assert.match(pageSource, /normalizeRecentShareHref\(record\.href\) === activeRecentHref/);
   assert.match(pageSource, /activeRecentHref=\{activeRecentHref\}/);
-  assert.match(pageSource, /wku-recent-run wku-clickable \$\{isRecentActive \? 'is-active' : ''\}/);
+  assert.match(pageSource, /wku-recent-run \$\{isRecentActive \? 'is-active' : ''\}/);
   assert.match(cssSource, /wku-recent-run\.is-active/);
   assert.match(cssSource, /wku-recent-run\.is-active b/);
   assert.equal(pageSource.includes("const workbenchNavActive = activeView === 'workbench' || activeView === 'invite' || activeView === 'share'"), false);
@@ -235,10 +247,14 @@ test('sidebar active states use the dark rendered mode card treatment', () => {
   assert.match(cssSource, /transition:\s*transform 180ms/);
 });
 
-test('recent share records open through in-app hash state without a full reload', () => {
-  assert.match(pageSource, /record\.href\.startsWith\('\/#\/share\/'\)/);
-  assert.match(pageSource, /const nextHash = record\.href\.replace/);
-  assert.match(pageSource, /setHashRoute\(nextHash\)/);
+test('recent share records open through the standalone route and expose copy action', () => {
+  assert.match(pageSource, /record\.href\.startsWith\('\/share\/'\) \|\| record\.href\.startsWith\('\/#\/share\/'\)/);
+  assert.match(pageSource, /const nextPath = normalizeRecentShareHref\(record\.href\)/);
+  assert.match(pageSource, /navigate\(nextPath\)/);
+  assert.match(pageSource, /wku-recent-copy-button/);
+  assert.match(pageSource, /onCopyRecent\(record\)/);
+  assert.match(pageSource, /getAbsoluteShareLink\(record\.href\)/);
+  assert.match(pageSource, /`recent-share-\$\{record\.id\}`/);
   assert.equal(pageSource.includes('window.location.href = `${window.location.origin}${record.href}`'), false);
   assert.match(pageSource, /RECENT_RUNS_STORAGE_KEY/);
   assert.match(pageSource, /window\.localStorage/);
@@ -290,19 +306,22 @@ test('scores are explained where users see them', () => {
 
 test('home layout keeps the original hero and makes the workbench CTA obvious', () => {
   assert.match(pageSource, /wku-hero wku-glass-hero wku-hero-strip/);
-  assert.match(pageSource, /max-w-\[980px\]/);
+  assert.match(pageSource, /wku-home-shell/);
+  assert.match(pageSource, /max-w-\[1640px\]/);
+  assert.match(pageSource, /max-w-\[1080px\]/);
   assert.match(pageSource, /立即体验/);
   assert.match(pageSource, /onStart\('single'\)/);
-  assert.match(pageSource, /lg:text-\[56px\]/);
-  assert.match(pageSource, /sm:text-\[30px\]/);
+  assert.match(pageSource, /lg:text-\[64px\]/);
+  assert.match(pageSource, /sm:text-\[34px\]/);
   assert.equal(cssSource.includes('white-space: nowrap;\\n    text-wrap: normal;'), false);
+  assert.match(cssSource, /wku-home-shell\s*\{[\s\S]*min-height:\s*100svh/);
+  assert.match(cssSource, /wku-hero-strip\s*\{[\s\S]*min-height:\s*calc\(100svh - 32px\)/);
+  assert.match(cssSource, /wku-hero-strip\s*>\s*\.relative\s*\{[\s\S]*grid-template-rows:\s*auto auto minmax\(460px,\s*1fr\)/);
   assert.match(cssSource, /wku-hero-subtitle\s*\{[\s\S]*text-wrap:\s*balance/);
   assert.match(cssSource, /wku-hero-cta\s*\{[\s\S]*justify-self:\s*center/);
-  assert.match(cssSource, /grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(220px,\s*320px\)/);
+  assert.match(cssSource, /grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(240px,\s*340px\)/);
   assert.match(cssSource, /min-height:\s*64px/);
-  assert.equal(cssSource.includes('min-height: calc(100svh - 40px)'), false);
-  assert.equal(cssSource.includes('grid-template-rows: auto minmax(420px, 1fr)'), false);
-  assert.match(cssSource, /wku-hero-map\s*\{[\s\S]*min-height:\s*clamp\(340px,\s*38svh,\s*460px\)/);
+  assert.match(cssSource, /wku-hero-map\s*\{[\s\S]*min-height:\s*clamp\(460px,\s*48svh,\s*620px\)/);
 });
 
 test('loading preview carries the six agent progress beside the chart', () => {
